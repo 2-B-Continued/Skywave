@@ -1,0 +1,58 @@
+/* feel.css - the shared motion rules (see feel.js for the full list). Loaded last, so it has the final say: no overshoot in everyday use, presses at 0.97, knobs that stretch 12% as they move, masks for colour and
+   reveals, and nothing tweening while it is held. */
+
+/* the curves and timings everything uses; the "pop" curves do not overshoot */
+:root {
+  --ease-out: cubic-bezier(.23, 1, .32, 1);
+  --ease-io: cubic-bezier(.65, 0, .35, 1);
+  --ease-pop: cubic-bezier(.23, 1, .32, 1);
+  --ez-back: cubic-bezier(.16, 1, .3, 1);
+  --d-press: 160ms; --d-pop: 220ms; --d-pop-out: 176ms; --d-enter: 250ms; --d-exit: 200ms; --d-move: 320ms;
+}
+
+/* ---------------------------------------------------------------- press: 0.97, quick and soft */
+:root[data-style]:not([data-motion="off"]) :is(.btn, .chip, .seg button, .mode-switch button, .mobile-nav button, .tab,
+  .rdp-row, .rdp-preset-b, .rdx-freq, .spx-row-main, .spx-pass, .spx-sat > summary, .ho-st, .ho-dir-i, .ho-tile-h, .ho-link,
+  .station, .tile, .list-opt, .th-card, .sen-card, .np-art.ol-can, .locp-row, summary):active {
+  scale: .97; transition-property: scale, background-color, border-color, color, box-shadow; transition-duration: var(--d-press); transition-timing-function: var(--ease-out);
+}
+@media (prefers-reduced-motion: reduce) { :root[data-style] :is(.btn, .chip, .seg button, .tab, summary):active { scale: none; } }
+
+/* ---------------------------------------------------------------- knobs stretch 12% the way they travel */
+:root[data-style] .switch i::after { transition: transform var(--d-move) var(--ease-io), width var(--d-press) var(--ease-out), margin var(--d-press) var(--ease-out); }
+:root[data-style]:not([data-motion="off"]) .switch:active i::after { scale: 1.12 1; transform-origin: left center; }
+:root[data-style]:not([data-motion="off"]) .switch input:checked + i::after { transform-origin: right center; }
+:root[data-style]:not([data-motion="off"]) .switch:active input:checked + i::after { scale: 1.12 1; }
+:root[data-style] input[type=range]:active::-webkit-slider-thumb { scale: 1.12 1; }
+:root[data-style] input[type=range]:active::-moz-range-thumb { scale: 1.12 1; }
+
+/* ---------------------------------------------------------------- nothing tweens while held */
+.kx-held, .kx-held *, .kx-holding .kx-held ~ * .scale-val, .kx-holding .scale-pop { transition: none !important; }
+
+/* ---------------------------------------------------------------- colour through a mask (feel.js adds the layer) */
+.kx-filling { position: relative; isolation: isolate; transition: none !important; }
+.kx-fill { position: absolute; inset: 0; z-index: -1; border-radius: inherit; pointer-events: none; }
+
+/* ---------------------------------------------------------------- the moving highlight (one element, one identity) */
+.kx-mark { position: absolute; left: 0; top: 0; z-index: 0; pointer-events: none; border-radius: var(--r-ctl, 8px); background: color-mix(in srgb, var(--pri, var(--ink)) 13%, transparent); }
+.kx-mark.ring { background: none; box-shadow: 0 0 0 2px var(--sf), 0 0 0 4px var(--ink); border-radius: 3px; }
+.kx-mark[hidden] { display: none; }
+
+/* ---------------------------------------------------------------- something thrown to its new home */
+.kx-fly { position: fixed; left: 0; top: 0; z-index: 200; pointer-events: none; padding: 6px 12px; border-radius: var(--r-chip, 999px); background: var(--ink); color: var(--sf);
+  font: 500 13px/1.2 var(--f-body, system-ui); white-space: nowrap; box-shadow: 0 8px 24px -10px #0008; will-change: transform; }
+
+/* ---------------------------------------------------------------- reveals through a mask: cover art wipes in from the top */
+:root[data-style] :is(.rdx-cover, .ho-cover) img { clip-path: inset(0 0 100% 0); opacity: 1; transition: clip-path .5s var(--ease-out), opacity .2s ease; }
+:root[data-style] :is(.rdx-cover.on, .ho-cover.on) img { clip-path: inset(0 0 0 0); }
+:root[data-style] :is(.rdx-cover, .ho-cover):not(.on) img { opacity: 0; }
+:root[data-motion="off"] :is(.rdx-cover, .ho-cover) img { transition: opacity .2s ease; clip-path: none; }
+@media (prefers-reduced-motion: reduce) { :root[data-style] :is(.rdx-cover, .ho-cover) img { transition: opacity .2s ease; clip-path: none; } }
+
+/* calmer versions of effects defined in other sheets: no overshoot, no long runs */
+#rd-star.on.just svg { animation: none; }
+:root:not([data-motion="off"]) .mobile-nav button[aria-selected="true"] svg { animation-timing-function: var(--ease-out); }
+.toast.out { transition-duration: 240ms; }
+:root[data-style] :is(.ho-li, .rdx-listen-i) { display: inline-grid; place-items: center; position: relative; width: 18px; height: 18px; }
+:root[data-style] :is(.ho-li, .rdx-listen-i) svg { width: 18px; height: 18px; }
+:root[data-style] .glide { transition: translate var(--d-move) var(--ease-io), width var(--d-move) var(--ease-io), opacity var(--d-quick) ease; }

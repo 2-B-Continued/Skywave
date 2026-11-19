@@ -1,0 +1,173 @@
+/* craft.css - the shared design system, loaded last so every style draws from the same rules.
+
+   Direction
+   Product    A receiver you host yourself that turns one RTL-SDR dongle into radio, plane, ship, satellite, balloon and sensor tracking.
+   Character  Exact, nocturnal, a little warm.
+   World      An instrument bench at night: lit dials, phosphor screens, panel meters.
+   Moments    The tuned readout with its dial and waterfall, and the maps with live tracks. These get the colour; the chrome stays quiet.
+   Signature  The frequency in tabular digits with a live signal dot beside it that brightens with what the antenna hears.
+
+   Rules every style follows: a 4 px spacing grid; three text roles (--ink, --ink-2, --ink-3); one accent (--accent) used for the
+   primary action, selection and the key figure; sentence case with no tracked capitals on small labels; mono only for code, keys and
+   instrument readouts; tabular figures everywhere; nested corners (inner = outer - padding, set by craft.js); motion from the tokens
+   below, transform and opacity only, with a gentler version for reduced motion. */
+
+:root {
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 20px; --s6: 24px; --s8: 32px; --s10: 40px; --s12: 48px;
+  --ease-out: cubic-bezier(.23, 1, .32, 1);
+  --ease-io: cubic-bezier(.77, 0, .175, 1);
+  --ease-smooth: cubic-bezier(.22, 1, .36, 1);
+  --ease-pop: cubic-bezier(.34, 1.36, .64, 1);
+  --d-press: 140ms; --d-quick: 150ms; --d-fast: 250ms; --d-med: 350ms; --d-slow: 400ms; --d-emph: 500ms;
+  --accent: var(--teal); --on-accent: var(--on-teal);
+  --hair: color-mix(in srgb, var(--ink) 10%, transparent);
+  --lvl: 0;
+}
+
+/* ---------------------------------------------------------------- type */
+body { font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; text-rendering: optimizeLegibility; }
+h1, h2, h3, h4, .station-name, .hw-big, summary b { text-wrap: balance; }
+p, .sub, .hw-sub, .banner .txt, .cta .txt, li, dd { text-wrap: pretty; }
+.freq, .hw-big, .tbl td, time, .meter, .kv dd, .lp-counter, .clock { font-variant-numeric: tabular-nums; }
+
+/* No italics for emphasis. Folio keeps its italic only on the brand mark, which is a logo. */
+:root[data-style] :is(em, i:not(:empty), .hw-quote, .station-name, .badge, .pill, .toast) { font-style: normal; }
+:root[data-style] i.dot, :root[data-style] .strength i { font-style: normal; }
+
+/* Small labels are sentence case and untracked: tracked capitals shout and slow reading. */
+:root[data-style] :is(.hw-lbl, .now-box .state, .talk-badge, label.field, label.field > span:first-child, .field > label:first-child, .tbl th, .badge, .toast, .mode-switch button, .topbar .pill, .seg button, .chip, .mobile-nav button, .station-name, .freq small, .tile b) {
+  text-transform: none; letter-spacing: 0;
+}
+:root[data-style] :is(.btn, .tab) { letter-spacing: 0; }
+:root[data-style]:not([data-style="brut"]) :is(.btn, .tab, h3, .tile b) { text-transform: none; }
+
+/* Mono only where it is needed: code, keys, logs and the instrument readouts. Labels and controls use the interface face. */
+:root[data-style]:not([data-style="terminal"]) :is(.hw-big.mono, .hw-lbl, label.field, .tab, .btn, .chip, .seg button, .mode-switch button, .topbar .pill, .tbl th, .toast, .mobile-nav button, h3, .badge) { font-family: var(--sans); }
+
+.hw-lbl { font-size: 14px; font-weight: 500; color: var(--ink-2); }
+.hw-big { font-weight: 500; letter-spacing: -.01em; }
+.muted, .hint, .small.muted { color: var(--ink-3, var(--ink-2)); }
+
+/* ---------------------------------------------------------------- spacing: tight inside a group, open between groups */
+.page-head { margin-bottom: var(--s6); }
+.page-head p { color: var(--ink-2); line-height: 1.5; }
+.stack { gap: var(--s4); }
+.two-col { gap: var(--s6); }
+.card-head { margin-bottom: var(--s3); }
+.card h3 + .sub, .card-head .sub { margin-top: var(--s1); }
+.hm-sec { margin: var(--s10) 0 var(--s3); }
+
+/* ---------------------------------------------------------------- the one accent, and a primary action that reads first */
+.btn { transition-property: background-color, border-color, color, box-shadow, opacity, scale, translate; transition-duration: var(--d-quick); transition-timing-function: ease; }
+.btn.primary { font-weight: 600; }
+.btn.primary.big, #sb-play { min-height: 48px; padding-inline: var(--s6); font-size: 17px; }
+.btn.primary svg { color: currentColor; }
+.tab[aria-selected="true"], .tab.active, .tab[aria-current="page"] { color: var(--ink); }
+
+/* ---------------------------------------------------------------- icons: one set, one weight, one size per context */
+.btn svg, .chip svg { width: 18px; height: 18px; }
+.btn.big svg, #sb-play svg { width: 20px; height: 20px; }
+.tab svg { width: 20px; height: 20px; }
+#rd-star svg { transition: scale var(--d-fast) var(--ease-pop), fill var(--d-quick) ease; }
+#rd-star.on svg { fill: var(--amber); color: var(--amber); }
+#rd-star.on.just svg { animation: star-pop var(--d-emph) var(--ease-pop); }
+@keyframes star-pop { 0% { scale: .6; rotate: -18deg; } 60% { scale: 1.18; rotate: 6deg; } 100% { scale: 1; rotate: 0deg; } }
+
+/* ---------------------------------------------------------------- embellishments out */
+:root[data-style]:not([data-style="console"]) .freq { text-shadow: none; }
+:root[data-style] .freq small { text-shadow: none; }
+:root[data-style]:not([data-style="terminal"]):not([data-style="console"]) .freq small { font-family: var(--sans); font-weight: 500; }
+
+/* ---------------------------------------------------------------- the main feature, bigger */
+.sig-dot { display: inline-block; width: clamp(8px, .1em, 13px); height: clamp(8px, .1em, 13px); border-radius: 50% !important; background: var(--amber); vertical-align: middle; margin-left: .18em; box-shadow: none !important;
+  opacity: calc(.25 + var(--lvl) * .75); scale: calc(.7 + var(--lvl) * .5); transition: opacity var(--d-fast) ease, scale var(--d-fast) var(--ease-out); }
+.freq .sig-dot { font-size: 1em; }
+.sig-bloom { position: absolute; inset: 0; pointer-events: none; z-index: -1; border-radius: inherit;
+  background: radial-gradient(60% 70% at 18% 30%, color-mix(in srgb, var(--amber) 22%, transparent), transparent 70%);
+  opacity: calc(var(--lvl) * .9); transition: opacity var(--d-med) ease; }
+
+/* the bars rise to their level instead of switching */
+.strength i { transform-origin: bottom; transition: background-color var(--d-quick) ease, scale var(--d-fast) var(--ease-out); scale: 1 .55; }
+.strength i.on { scale: 1 1; }
+
+/* a changed digit rolls in from the direction the frequency moved */
+.freq .dg { display: inline-block; }
+.freq .dg.up { animation: dg-up var(--d-fast) var(--ease-out); }
+.freq .dg.down { animation: dg-down var(--d-fast) var(--ease-out); }
+@keyframes dg-up { from { translate: 0 .22em; opacity: .15; filter: blur(2px); } }
+@keyframes dg-down { from { translate: 0 -.22em; opacity: .15; filter: blur(2px); } }
+.hw-big.pop, .lp-counter.pop { animation: num-pop var(--d-fast) var(--ease-out); }
+@keyframes num-pop { from { translate: 0 4px; opacity: .3; filter: blur(2px); } }
+
+/* ---------------------------------------------------------------- Home: the receiver's state is the headline */
+.hm-hero { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--s5) var(--s6); flex-wrap: wrap; margin-bottom: var(--s8); }
+.hm-hero-main { min-width: 0; flex: 1 1 420px; }
+.hm-kick { display: flex; align-items: center; gap: var(--s2); font-size: 15px; color: var(--ink-2); margin-bottom: var(--s2); }
+.hm-kick .dot { width: 9px; height: 9px; }
+#hm-title { margin: 0; max-width: 22ch; }
+#hm-line { margin: var(--s3) 0 0; color: var(--ink-2); font-size: 17px; max-width: 60ch; }
+.hm-acts { flex: none; }
+:root[data-page="home"] #banners .banner.sim { display: none; }
+
+/* ---------------------------------------------------------------- banners: one line, not a slab */
+.banner.slim { padding: var(--s2) var(--s4); align-items: center; }
+.banner.slim strong { display: inline; margin-right: var(--s2); }
+.banner.slim .txt { min-width: 0; }
+
+/* ---------------------------------------------------------------- loading states */
+.skel-wrap { display: flex; flex-direction: column; gap: var(--s2); padding-top: var(--s2); }
+.skel { display: block; height: 12px; border-radius: 6px; background: color-mix(in srgb, var(--ink) 11%, transparent); animation: skel 1.2s ease-in-out infinite alternate; }
+.skel.big { height: 28px; width: 46%; border-radius: 8px; margin-bottom: var(--s1); }
+@keyframes skel { from { opacity: .55; } to { opacity: 1; } }
+.skel-wrap + *, .hw .skel-wrap ~ .hw-foot { animation: none; }
+.is-loading { position: relative; pointer-events: none; }
+.is-loading > * { opacity: .55; transition: opacity var(--d-quick) ease; }
+.btn.busy { pointer-events: none; }
+.btn.busy::after { content: ""; width: 14px; height: 14px; margin-left: var(--s2); border-radius: 50%; border: 2px solid currentColor; border-right-color: transparent; animation: spin .7s linear infinite; flex: none; }
+@keyframes spin { to { rotate: 360deg; } }
+
+/* ---------------------------------------------------------------- feedback that shows what changed */
+.toast { display: flex; align-items: center; gap: var(--s2); font-weight: 500; animation: toast-rise var(--d-slow) var(--ease-smooth); }
+.toast .tk { flex: none; width: 18px; height: 18px; }
+.toast .tk path { stroke-dasharray: 24; stroke-dashoffset: 24; animation: tick-draw var(--d-emph) var(--ease-out) .12s forwards; }
+.toast.out { opacity: 0; translate: 0 6px; transition: opacity var(--d-quick) ease, translate var(--d-quick) ease; }
+@keyframes toast-rise { from { translate: 0 14px; opacity: 0; filter: blur(4px); } }
+@keyframes tick-draw { to { stroke-dashoffset: 0; } }
+.flash-ok { animation: flash-ok var(--d-emph) var(--ease-out); }
+@keyframes flash-ok { from { box-shadow: 0 0 0 3px color-mix(in srgb, var(--good) 55%, transparent); } }
+.shake { animation: shake .32s var(--ease-out); }
+@keyframes shake { 20% { translate: -6px 0; } 45% { translate: 5px 0; } 70% { translate: -3px 0; } 100% { translate: 0 0; } }
+
+/* the active tab and the Easy / Advanced switch: an indicator glides to the new choice */
+.tabs, .mode-switch { position: relative; }
+.glide { position: absolute; left: 0; bottom: 0; height: 2px; width: 10px; border-radius: 2px; background: var(--accent); pointer-events: none; z-index: 2;
+  transform-origin: left; transition: translate var(--d-fast) var(--ease-smooth), width var(--d-fast) var(--ease-smooth), opacity var(--d-quick) ease; }
+.glide.hidden { opacity: 0; }
+
+/* presses answer immediately */
+@media (prefers-reduced-motion: no-preference) {
+  :root:not([data-motion="off"]) :is(.btn, .chip, .seg button, .mode-switch button, .mobile-nav button, .tab):active { scale: .97; transition-duration: var(--d-press); transition-timing-function: var(--ease-out); }
+}
+
+/* nested corners: craft.js measures each container and sets --r-nest = its radius minus its padding */
+:is(.mode-switch, .seg, .tabs)[style*="--r-nest"] > :is(button, .tab) { border-radius: var(--r-nest); }
+.soundbar[style*="--r-nest"] > .btn { border-radius: var(--r-nest); }
+
+/* focus is always visible, in the accent */
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .freq .dg.up, .freq .dg.down, .hw-big.pop, #rd-star.on.just svg { animation: fade-in var(--d-quick) ease; }
+  .toast { animation: fade-in var(--d-quick) ease; }
+  .skel { animation: none; opacity: .8; }
+  .glide, .sig-dot, .strength i { transition-property: opacity, background-color; }
+  .shake { animation: none; }
+}
+@keyframes fade-in { from { opacity: 0; } }
+
+@media (max-width: 760px) {
+  .hm-hero { margin-bottom: var(--s6); }
+  .hm-acts { width: 100%; }
+  .hm-acts .btn.primary { flex: 1; }
+  #hm-line { font-size: 16px; }
+}

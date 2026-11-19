@@ -1,0 +1,241 @@
+/* kinetic.css - now playing, scroll-driven motion and parallax, touch feedback. Loaded after styles.css.
+   Scroll motion uses CSS scroll timelines (animation-timeline: view() / scroll()), which run on the compositor: they cost the
+   main thread nothing, so phones get the full treatment without touching audio. They animate only translate / scale / rotate,
+   so they compose with the GSAP entrances (which use transform and opacity) instead of fighting them.
+   Everything here is off when the device asks for reduced motion or Motion is set to Off. */
+
+/* ================================================================ now playing: the cover is an object, not a ghost */
+.np { display: none; margin: 0; flex: none; gap: 14px; }
+.np.on { display: flex; flex-direction: column; align-items: flex-end; text-align: right; }
+.np-art { position: relative; width: clamp(150px, 15vw, 220px); aspect-ratio: 1; overflow: hidden; flex: none;
+  border-radius: var(--np-r, max(6px, calc(var(--r-inst, var(--r, 16px)) - 14px)));
+  box-shadow: 0 34px 60px -26px #000d, 0 0 0 1px color-mix(in srgb, #fff 12%, transparent);
+  transform: perspective(900px) rotateX(var(--np-rx, 0deg)) rotateY(var(--np-ry, 0deg)); transition: transform .6s var(--ease-out, ease); background: #0006; }
+.np-art img { display: block; width: 100%; height: 100%; object-fit: cover; margin: 0; border: 0; border-radius: 0; background: none; opacity: 1; -webkit-mask: none; mask: none; }
+.np-art::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(135deg, color-mix(in srgb, #fff 22%, transparent), transparent 42%); mix-blend-mode: soft-light; }
+.np figcaption { display: flex; flex-direction: column; gap: 2px; max-width: 24ch; min-width: 0; }
+.np figcaption b { font-family: var(--f-disp, inherit); font-weight: var(--w-disp, 600); letter-spacing: -.015em; font-size: 19px; line-height: 1.15; color: var(--inst-ink); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-transform: none; }
+.np figcaption span { font-size: 15px; color: color-mix(in srgb, var(--inst-ink) 78%, transparent); }
+.np figcaption small { font-size: 13px; color: color-mix(in srgb, var(--inst-ink) 58%, transparent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.art-bar { border-radius: max(4px, calc(var(--r-ctl, 10px) - 4px)); border: 0; box-shadow: 0 0 0 1px color-mix(in srgb, #fff 12%, transparent), 0 6px 14px -6px #000a; }
+.np-home { display: none; }
+.np-home.on { display: block; order: 1; }
+.np-home .np-art { width: clamp(96px, 10vw, 140px); }
+.hm-hero:has(.np-home.on) .hm-acts { order: 2; }
+
+/* the cover arrives out of a blur and settles; the whole block rises the first time it shows */
+img.art-in { animation: kx-art-in .8s var(--ease-smooth, ease) both; }
+@keyframes kx-art-in { from { opacity: 0; scale: 1.12; filter: blur(16px) saturate(1.8); } }
+.np.on .np-art { animation: kx-np-in .7s var(--ease-smooth, ease) both; }
+@keyframes kx-np-in { from { opacity: 0; translate: 0 18px; scale: .92; } }
+
+/* the cover's colour tints the instrument, the player and the page around it */
+.dial-card::before { filter: blur(60px) saturate(1.6) brightness(.6); }
+.dial-card.has-art::before { opacity: .75; }
+:root.art-tinted .soundbar, :root.art-tinted .mobile-nav { box-shadow: inset 0 0 0 999px color-mix(in srgb, var(--art-c) 16%, transparent); }
+:root.has-art[data-page="radio"] body::after { content: ""; position: fixed; inset: -10%; z-index: -1; pointer-events: none; background: var(--art-url) center / cover no-repeat; filter: blur(90px) saturate(1.5); opacity: .16; animation: kx-fade 1.2s ease both; }
+@keyframes kx-fade { from { opacity: 0; } }
+
+/* per style */
+:root[data-style="skywave"] .np-art { --np-r: 22px; box-shadow: 0 40px 80px -30px #000e, inset 0 1px 0 #fff4, 0 0 0 1px #ffffff26; }
+:root[data-style="aurora"] .np.on { align-items: center; text-align: center; }
+:root[data-style="aurora"] .np-art { --np-r: 50%; box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 60%, transparent), 0 0 0 10px color-mix(in srgb, var(--accent) 8%, transparent), 0 30px 70px -30px #000; }
+:root[data-style="aurora"] .np-art::before { content: ""; position: absolute; inset: 42%; border-radius: 50%; z-index: 1; background: var(--chassis); box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 50%, transparent); }
+:root[data-style="aurora"].sound-on .np-art img { animation: kx-spin 9s linear infinite; }
+@keyframes kx-spin { to { rotate: 360deg; } }
+:root[data-style="classic"] .np-art { --np-r: 18px; }
+:root[data-style="lumen"] .np-art { --np-r: 10px; box-shadow: 0 0 0 1px #ffffff1f, 0 24px 50px -24px #000; }
+:root[data-style="bento"] .np-art { --np-r: 26px; border: 6px solid #fff; rotate: -3deg; box-shadow: 0 4px 0 #000, 0 30px 50px -24px #000a; }
+:root[data-style="folio"] .np-art { --np-r: 0; box-shadow: none; outline: 1px solid var(--inst-ink); outline-offset: 6px; }
+:root[data-style="folio"] .np-art img { filter: grayscale(1) contrast(1.15); transition: filter .6s ease; }
+:root[data-style="folio"] .np-art:hover img { filter: none; }
+:root[data-style="folio"] .np figcaption b { font-size: 26px; }
+:root[data-style="terminal"] .np-art { --np-r: 0; box-shadow: 0 0 0 1px var(--accent); }
+:root[data-style="terminal"] .np-art img { filter: grayscale(1) contrast(1.5) brightness(.95); }
+:root[data-style="terminal"] .np-art::after { background: repeating-linear-gradient(0deg, #0006 0 1px, transparent 1px 3px), var(--accent); mix-blend-mode: multiply; }
+:root[data-style="terminal"] .np figcaption b::before { content: "> "; color: var(--accent); }
+:root[data-style="brut"] .np-art { --np-r: 0; border: 4px solid var(--inst-ink); box-shadow: 10px 10px 0 var(--amber); }
+:root[data-style="ticket"] .np-art { --np-r: 3px; border: 8px solid #fbf6ea; border-bottom-width: 30px; rotate: 2.5deg; box-shadow: 0 24px 40px -20px #000c; }
+:root[data-style="console"] .np-art { --np-r: 6px; box-shadow: inset 0 0 0 1px #000, 0 0 0 4px color-mix(in srgb, #000 60%, var(--panel)), 0 0 0 5px #ffffff14, 0 20px 40px -20px #000; }
+:root[data-style="console"] .np-art::after { background: repeating-linear-gradient(0deg, #0000004d 0 1px, transparent 1px 3px), linear-gradient(135deg, #ffffff1a, transparent 40%); mix-blend-mode: normal; }
+
+@media (max-width: 760px) {
+  .np.on { flex-direction: row; align-items: center; text-align: left; width: 100%; margin-top: 4px; }
+  .np-art { width: 76px; }
+  :root[data-style="aurora"] .np.on { justify-content: center; }
+  :root[data-style] .np figcaption b { font-size: 17px; }
+  :root[data-style="bento"] .np-art { border-width: 4px; }
+  :root[data-style="ticket"] .np-art { border-width: 4px 4px 14px; }
+  .np-home.on { display: none; }
+}
+
+/* ================================================================ motion (all levels except Off, unless the device asks for less) */
+@media (prefers-reduced-motion: no-preference) {
+
+  /* touch and click: a ripple from where you pressed */
+  .kx-rw { position: absolute; inset: 0; overflow: hidden; border-radius: inherit; pointer-events: none; z-index: 0; }
+  .kx-rip { position: absolute; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; background: currentColor; opacity: .22; scale: 0; animation: kx-rip .6s var(--ease-out, ease) forwards; }
+  @keyframes kx-rip { to { scale: var(--kx-s, 40); opacity: 0; } }
+
+  /* segmented controls: a pill slides to the new choice */
+  .kx-seg { position: relative; isolation: isolate; }
+  .kx-pill { position: absolute; left: 0; top: 0; z-index: -1; border-radius: var(--r-ctl, 10px); background: var(--sel); pointer-events: none;
+    transition: height .32s var(--ease-io, ease-in-out), opacity .2s ease; }   /* moves are animated by kinetic.js (ease-in-out, 12% stretch) */
+  :root[data-style="console"] .kx-pill { box-shadow: inset 0 2px 6px #000c; }
+  .kx-seg.kx-ready > button[aria-pressed="true"] { background: transparent !important; box-shadow: none; }
+  .kx-seg.kx-ready > button { position: relative; transition: color .25s ease; }
+
+  /* phone navigation: the chosen section pops, its icon lifts */
+  .mobile-nav button[aria-selected="true"] svg { animation: kx-lift .5s var(--ease-pop, ease) both; }
+  @keyframes kx-nav { from { scale: .86; } }
+  @keyframes kx-lift { 0% { translate: 0 4px; } 55% { translate: 0 -3px; } 100% { translate: 0 0; } }
+
+  /* pages slide in from the side you are heading to */
+  .page.on.kx-fwd { animation: kx-pg-fwd .5s var(--ease-smooth, ease) both; }
+  .page.on.kx-back { animation: kx-pg-back .5s var(--ease-smooth, ease) both; }
+  @keyframes kx-pg-fwd { from { translate: 36px 0; opacity: 0; } }
+  @keyframes kx-pg-back { from { translate: -36px 0; opacity: 0; } }
+
+  /* numbers that change pop, and big figures count in */
+  .stat-row b.pop { animation: num-pop .35s var(--ease-out, ease); }
+
+  /* desktop hovers that say "this is pressable" */
+  @media (hover: hover) and (pointer: fine) {
+    :root:not([data-motion="off"]) :is(.station, .list-opt, .hw, .sat-card, .sensor, .th-card) { transition: translate .25s var(--ease-out, ease), box-shadow .25s ease, background-color .2s ease; }
+    :root:not([data-motion="off"]) :is(.station, .list-opt, .sat-card, .sensor, .th-card):hover { translate: 0 -2px; }
+    :root:not([data-motion="off"]) .hw:not(.editing *):hover { translate: 0 -3px; }
+    :root:not([data-motion="off"]) #hm-actions .tile:hover svg { rotate: -8deg; scale: 1.08; transition: rotate .3s var(--ease-pop, ease), scale .3s var(--ease-pop, ease), background-color .15s ease; }
+    :root:not([data-motion="off"]) .tab:hover svg { animation: kx-lift .45s var(--ease-pop, ease); }
+    :root:not([data-motion="off"]) .btn.primary { background-image: linear-gradient(110deg, transparent 35%, #ffffff40 50%, transparent 65%); background-size: 250% 100%; background-position: 120% 0; background-repeat: no-repeat; transition: background-position .7s var(--ease-out, ease), filter .2s ease; }
+    :root:not([data-motion="off"]) .btn.primary:hover { background-position: -40% 0; }
+  }
+
+  /* ---------------------------------------------------------------- scroll-driven: content flows in and out as you scroll */
+  @supports (animation-timeline: view()) {
+    @keyframes kx-flow {
+      entry 0% { translate: 0 48px; scale: .93; }
+      entry 85% { translate: 0 0; scale: 1; }
+      exit 45% { translate: 0 0; scale: 1; }
+      exit 100% { translate: 0 -18px; scale: .96; } }
+    /* list rows and widgets arrive at slightly different speeds, so a list reads as depth, not a block */
+    :root:not([data-motion="off"]) .page.on :is(.station, .hw, .list-opt, .stat-row > div):nth-child(3n+2) { animation-range: entry -6% exit 100%; }
+    :root:not([data-motion="off"]) .page.on :is(.station, .hw, .list-opt, .stat-row > div):nth-child(3n) { animation-range: entry -12% exit 100%; }
+
+    /* parallax: the explanation under a title drifts slower than the page */
+    :root:not([data-motion="off"]) .page.on .page-head > p, :root:not([data-motion="off"]) #hm-line, :root:not([data-motion="off"]) .hm-kick {
+      animation: kx-slow linear both; animation-timeline: view(); animation-range: exit 0% exit 100%; }
+    @keyframes kx-slow { to { translate: 0 56px; } }
+    :root:not([data-motion="off"]) #hm-title { animation: kx-slower linear both; animation-timeline: view(); animation-range: exit 0% exit 100%; }
+    @keyframes kx-slower { to { translate: 0 90px; scale: .96; } }
+    :root:not([data-motion="off"]) .np-home.on .np-art { animation: kx-np-in .7s var(--ease-smooth, ease) both, kx-tilt linear both; animation-timeline: auto, view(); animation-range: normal, cover 0% cover 100%; }
+
+    /* the instrument: its art glow and cover tilt with the scroll */
+    @keyframes kx-depth { from { translate: 0 -50px; scale: 1.1; } to { translate: 0 50px; scale: 1; } }
+    :root:not([data-motion="off"]) #rd-np.on .np-art { animation: kx-np-in .7s var(--ease-smooth, ease) both, kx-tilt linear both; animation-timeline: auto, --dial; animation-range: normal, cover 0% cover 100%; }
+    @keyframes kx-tilt { from { rotate: x 14deg; translate: 0 -10px; } to { rotate: x -14deg; translate: 0 10px; } }
+    @keyframes kx-readout { to { translate: 0 40px; scale: .96; } }
+
+    /* the backdrop of the whole app moves slowest of all */
+    :root[data-style="skywave"]:not([data-motion="off"]) body::before { animation: kx-sky linear both; animation-timeline: scroll(root); }
+    @keyframes kx-sky { from { translate: 0 0; scale: 1.15; } to { translate: 0 -14vh; scale: 1; } }
+    :root[data-style="aurora"]:not([data-motion="off"]) body::before { content: ""; position: fixed; inset: -20% -10% auto; height: 80vh; z-index: -1; pointer-events: none;
+      background: radial-gradient(50% 60% at 50% 30%, color-mix(in srgb, var(--accent) 26%, transparent), transparent 70%); animation: kx-sky linear both; animation-timeline: scroll(root); }
+
+    /* the bar gains a shadow once the page has moved, and a hairline shows how far down you are */
+    :root:not([data-motion="off"]):not([data-style="lumen"]) .topbar { animation: kx-bar linear both; animation-timeline: scroll(root); animation-range: 0 140px; }
+    @keyframes kx-bar { to { box-shadow: 0 16px 40px -24px #000c; } }
+    .kx-progress { position: fixed; z-index: 120; left: 0; right: 0; top: 0; height: 2px; background: var(--art-c, var(--accent, var(--teal))); transform-origin: left; scale: 0 1; pointer-events: none;
+      animation: kx-prog linear both; animation-timeline: scroll(root); }
+    @keyframes kx-prog { to { scale: 1 1; } }
+    :root[data-motion="off"] .kx-progress { display: none; }
+  }
+}
+.kx-progress { display: none; }
+@supports (animation-timeline: scroll()) { @media (prefers-reduced-motion: no-preference) { .kx-progress { display: block; } } }
+
+/* ================================================================ the player card (sheet.js) */
+.psheet { position: fixed; inset: 0; z-index: 55; }
+.psheet[hidden] { display: none; }
+.psheet-back { position: absolute; inset: 0; background: color-mix(in srgb, #000 55%, transparent); opacity: 0; transition: opacity .45s ease; }
+.psheet.on .psheet-back { opacity: 1; }
+.psheet-panel { position: absolute; left: 0; right: 0; bottom: 0; top: max(28px, calc(env(safe-area-inset-top) + 12px)); display: flex; flex-direction: column; overflow: hidden;
+  background: var(--bg, var(--chassis)); color: var(--ink); border-radius: max(14px, var(--r-inst, var(--r, 22px))) max(14px, var(--r-inst, var(--r, 22px))) 0 0;
+  box-shadow: 0 -20px 60px -20px #000c, 0 0 0 1px var(--stroke, #fff1); transform: translate3d(0, 100%, 0); transition: transform .52s cubic-bezier(.32, .72, 0, 1); will-change: transform; }
+.psheet.on .psheet-panel { transform: none; }
+.psheet-grab { flex: none; position: relative; display: flex; align-items: center; justify-content: center; min-height: 48px; padding: 8px 56px 6px; cursor: grab; touch-action: none; user-select: none; }
+.psheet-grab i { position: absolute; top: 8px; left: 50%; width: 40px; height: 5px; margin-left: -20px; border-radius: 3px; background: color-mix(in srgb, var(--ink) 28%, transparent); }
+.psheet-grab b { font-family: var(--f-body); font-size: 15px; font-weight: 600; margin-top: 10px; }
+.psheet-x { position: absolute; right: 10px; top: 8px; min-width: 40px; padding: 0 !important; }
+.psheet-body { flex: 1; overflow: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; padding: 4px 24px 120px; }
+.psheet-body > .page { display: block !important; max-width: 1240px; margin: 0 auto; }
+.page.under-sheet { pointer-events: none; }
+:root.sheet-open { overflow: hidden; }
+:root.sheet-open .soundbar { z-index: 58; }
+:root.sheet-open .mobile-nav { z-index: 59; }
+:root.sheet-open .fileplayer { z-index: 58; }
+/* the page behind steps back, like a stack of cards */
+@media (prefers-reduced-motion: no-preference) {
+  :root:not([data-motion="off"]) main { transition: scale .52s cubic-bezier(.32, .72, 0, 1), filter .45s ease, border-radius .45s ease; transform-origin: 50% 0; }
+  :root.sheet-open:not([data-motion="off"]) main { scale: .94; filter: brightness(.75); border-radius: 18px; }
+}
+@media (min-width: 761px) {
+  .psheet-panel { left: max(16px, calc(50vw - 640px)); right: max(16px, calc(50vw - 640px)); top: 40px; }
+  .psheet-body { padding-bottom: 110px; }
+}
+@media (max-width: 760px) {
+  .psheet-body { padding: 0 12px calc(var(--nav-h, 64px) + var(--player-h, 64px) + 40px + env(safe-area-inset-bottom)); }
+}
+/* the mini player says it can open: a small handle on its top edge, and a press state */
+#soundbar .now, #fileplayer .now { cursor: pointer; border-radius: 10px; }
+@media (max-width: 760px) {
+  #soundbar::after { content: ""; position: absolute; top: 4px; left: 50%; width: 28px; height: 3px; margin-left: -14px; border-radius: 2px; background: color-mix(in srgb, var(--inst-ink, #fff) 30%, transparent); pointer-events: none; }
+}
+@media (prefers-reduced-motion: no-preference) { #soundbar .now:active, #fileplayer .now:active { scale: .98; transition: scale .14s var(--ease-out, ease); } }
+/* dialogs that are bottom cards follow the finger */
+.modal.is-sheet { touch-action: pan-y; will-change: transform; }
+
+/* ---------------------------------------------------------------- navglide.js: the section bars glide */
+#tabs, #mnav { isolation: isolate; }
+#tabs > :not(.kx-ng):not(.kx-nh):not(.glide), #mnav > :not(.kx-ng):not(.kx-nh) { position: relative; z-index: 1; }
+.kx-ng, .kx-nh { position: absolute; z-index: 0; box-sizing: border-box; pointer-events: none; margin: 0; }
+.kx-ng-on > .kx-ng-hide { background: transparent !important; background-image: none !important; box-shadow: none !important; border-color: transparent !important; outline-color: transparent !important; }
+/* the selected label colour fades across rather than snapping, in step with the shape arriving */
+#tabs > [role="tab"], #mnav > button { transition-property: color, opacity; transition-duration: .3s; transition-timing-function: ease; }
+.kx-nh { border-radius: 10px; background: color-mix(in srgb, currentColor 7%, transparent); opacity: 0;
+  transition: left .26s cubic-bezier(0.22, 1, 0.36, 1), top .26s cubic-bezier(0.22, 1, 0.36, 1), width .26s cubic-bezier(0.22, 1, 0.36, 1), height .26s cubic-bezier(0.22, 1, 0.36, 1), opacity .18s ease; }
+.kx-nh.on { opacity: 1; }
+#mnav .kx-nh { display: none; }
+@media (prefers-reduced-motion: reduce) { .kx-nh { transition: opacity .18s ease; } }
+:root[data-motion="off"] .kx-nh, :root[data-motion="off"] .kx-ng { display: none; }
+
+/* ---------------------------------------------------------------- "Open in" (art.js): press the cover */
+.np-art.ol-can { cursor: pointer; transition: scale .16s cubic-bezier(0.23, 1, 0.32, 1); -webkit-tap-highlight-color: transparent; }
+.np-art.ol-can:active { scale: .97; }
+.np-art.ol-can:focus-visible { outline: 2px solid var(--accent, var(--pri)); outline-offset: 4px; }
+.modal.ol-modal { width: min(440px, calc(100vw - 24px)); max-width: 440px; }
+:root[data-style] .ol-row, :root[data-style] .ol-row:visited { color: var(--ink); }
+.ol-head { display: flex; align-items: center; gap: 14px; min-width: 0; padding-right: 28px; }
+.ol-art { width: 64px; height: 64px; flex: none; object-fit: cover; border-radius: min(var(--r-ctl, 10px), 10px); }
+.ol-t { display: grid; gap: 1px; min-width: 0; }
+.ol-t b { font-size: 16px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ol-t span { font-size: 14px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ol-t small { font-size: 12.5px; color: var(--ink-3, var(--ink-2)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ol-lbl { margin: 20px 0 6px; font-size: 13px; font-weight: 500; color: var(--ink-3, var(--ink-2)); }
+.ol-list { display: grid; gap: 2px; min-height: 104px; }
+.ol-row { display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 0 10px; border-radius: min(var(--r-ctl, 10px), 12px);
+  color: var(--ink); text-decoration: none; font-weight: 500; transition: background-color .15s ease; }
+.ol-row > svg { width: 16px; height: 16px; opacity: .55; flex: none; }
+.ol-n { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ol-ic { position: relative; display: grid; place-items: center; width: 28px; height: 28px; flex: none; border-radius: 7px; overflow: hidden;
+  background: color-mix(in srgb, var(--ink) 9%, transparent); font-size: 13px; font-weight: 600; color: var(--ink-2); }
+.ol-ic::before { content: attr(data-l); }
+.ol-k { flex: none; font-size: 12.5px; font-weight: 400; color: var(--ink-3, var(--ink-2)); }
+.ol-ic img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #fff; }
+@media (hover: hover) and (pointer: fine) { .ol-row:hover { background: var(--ctl, color-mix(in srgb, var(--ink) 7%, transparent)); } }
+.ol-row:focus-visible { outline: 2px solid var(--accent, var(--pri)); outline-offset: -2px; }
+.ol-sk { display: block; height: 48px; border-radius: min(var(--r-ctl, 10px), 12px); background: var(--ctl, color-mix(in srgb, var(--ink) 7%, transparent)); animation: ol-wait 1.2s ease-in-out infinite; }
+.ol-sk:nth-child(2) { animation-delay: .1s; } .ol-sk:nth-child(3) { animation-delay: .2s; } .ol-sk:nth-child(4) { animation-delay: .3s; }
+@keyframes ol-wait { 50% { opacity: .45; } }
+.ol-empty { padding: 12px 4px; color: var(--ink-2); }
+.ol-note { margin: 12px 0 0; font-size: 12.5px; color: var(--ink-3, var(--ink-2)); }
+@media (prefers-reduced-motion: reduce) { .ol-sk { animation: none; } .np-art.ol-can:active { scale: none; } }

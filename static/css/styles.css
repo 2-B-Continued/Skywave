@@ -1,0 +1,721 @@
+/* styles.css - the style system. One foundation styles every element from tokens; each style is a set of
+   tokens plus its signature pieces (navigation, surfaces, the instrument). Colours still come from the colour theme,
+   so every theme works with every style.
+
+   Tokens a style sets:
+   type     --f-body --f-disp --f-num --f-code --w-disp --w-num --tr-disp --tr-num --h-case --h2
+   shape    --r (surfaces) --r-ctl (controls) --r-chip --pad --sw (stroke width)
+   surface  --bg --sf --sf-2 --stroke --elev --blur
+   controls --ctl --ctl-h --ctl-ink --ctl-stroke --pri --pri-ink --sel --sel-ink --press
+   chrome   --bar --bar-stroke --tab-sel --tab-sel-ink
+   instrument --inst --inst-ink --inst-stroke --sig */
+
+@font-face { font-family: "V Inter"; src: url("/fonts/Inter-Regular.woff") format("woff"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "V Inter"; src: url("/fonts/Inter-Medium.woff") format("woff"); font-weight: 500; font-display: swap; }
+@font-face { font-family: "V Inter"; src: url("/fonts/Inter-SemiBold.woff") format("woff"); font-weight: 600 700; font-display: swap; }
+@font-face { font-family: "V Mono"; src: url("/fonts/JetBrainsMono-Regular.woff") format("woff"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "V Mono"; src: url("/fonts/JetBrainsMono-Bold.woff") format("woff"); font-weight: 700; font-display: swap; }
+@font-face { font-family: "V Geist Mono"; src: url("/fonts/GeistMono-Regular.woff") format("woff"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "V Geist Mono"; src: url("/fonts/GeistMono-Bold.woff") format("woff"); font-weight: 700; font-display: swap; }
+@font-face { font-family: "V Bricolage"; src: url("/fonts/BricolageGrotesque-Regular.woff") format("woff"); font-weight: 400 500; font-display: swap; }
+@font-face { font-family: "V Bricolage"; src: url("/fonts/BricolageGrotesque-Bold.woff") format("woff"); font-weight: 600 800; font-display: swap; }
+@font-face { font-family: "V Serif"; src: url("/fonts/InstrumentSerif-Regular.woff") format("woff"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "V Sans"; src: url("/fonts/InstrumentSans-Regular.woff") format("woff"); font-weight: 400 500; font-display: swap; }
+@font-face { font-family: "V Sans"; src: url("/fonts/InstrumentSans-Bold.woff") format("woff"); font-weight: 600 800; font-display: swap; }
+@font-face { font-family: "V Jura"; src: url("/fonts/Jura-Light.woff") format("woff"); font-weight: 300; font-display: swap; }
+@font-face { font-family: "V Jura"; src: url("/fonts/Jura-Medium.woff") format("woff"); font-weight: 400 600; font-display: swap; }
+@font-face { font-family: "V Poiret"; src: url("/fonts/PoiretOne-Regular.woff") format("woff"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "V B612"; src: url("/fonts/B612Mono-Regular.ttf") format("truetype"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "V B612"; src: url("/fonts/B612Mono-Bold.ttf") format("truetype"); font-weight: 700; font-display: swap; }
+
+/* the tuned frequency as a hue (set by craft.js), so colour fields can follow the band you are on */
+@property --fhue { syntax: "<number>"; inherits: true; initial-value: 160; }
+:root { transition: --fhue 1.2s cubic-bezier(.22, 1, .36, 1); }
+
+/* ================================================================ defaults (every style starts here) */
+:root[data-style] {
+  --f-body: "V Inter", system-ui, sans-serif; --f-disp: var(--f-body); --f-num: var(--f-disp); --f-code: "V Mono", ui-monospace, monospace;
+  --w-disp: 600; --w-num: 600; --tr-disp: -.035em; --tr-num: -.04em; --h-case: none; --h2: clamp(34px, 4.2vw, 56px);
+  --r: 18px; --r-ctl: 12px; --r-chip: var(--r-ctl); --pad: 20px; --sw: 1px;
+  --bg: var(--chassis); --sf: var(--panel); --sf-2: color-mix(in srgb, var(--ink) 5%, var(--panel)); --stroke: color-mix(in srgb, var(--ink) 10%, transparent);
+  --elev: none; --blur: none;
+  --ctl: color-mix(in srgb, var(--ink) 7%, transparent); --ctl-h: color-mix(in srgb, var(--ink) 12%, transparent); --ctl-ink: var(--ink); --ctl-stroke: transparent;
+  --pri: var(--teal); --pri-ink: var(--on-teal); --sel: var(--ink); --sel-ink: var(--panel); --press: scale(.97);
+  --bar: color-mix(in srgb, var(--chassis) 82%, transparent); --bar-stroke: var(--stroke); --tab-sel: var(--ctl); --tab-sel-ink: var(--ink);
+  --inst: var(--glass); --inst-ink: var(--glass-ink); --inst-stroke: transparent; --sig: var(--amber);
+  --sans: var(--f-body); --display: var(--f-disp); --mono: var(--f-code); --radius: var(--r);
+}
+/* pop-ups (dialogs, sheets, the player card, toasts) follow the style's card corners, capped so they never turn into bubbles */
+:root[data-style] { --r-pop: min(var(--r), 20px); }
+
+/* ================================================================ foundation: every element, from the tokens */
+:root[data-style] body { font-family: var(--f-body); font-size: 15px; line-height: 1.5; color: var(--ink); background: var(--bg); -webkit-font-smoothing: antialiased; }
+:root[data-style] :is(h1, h2) { font-family: var(--f-disp); font-weight: var(--w-disp); letter-spacing: var(--tr-disp); text-transform: var(--h-case); line-height: 1; }
+:root[data-style] .page-head h2, :root[data-style] .page > h2:first-child { font-size: var(--h2); }
+:root[data-style] h3 { font-family: var(--f-body); font-size: 16px; font-weight: 600; letter-spacing: -.01em; text-transform: none; line-height: 1.3; }
+:root[data-style] h4 { font-family: var(--f-body); font-size: 14px; font-weight: 600; }
+:root[data-style] :is(code, pre, .kbd, .mono, .lp-raw, .lp-log, pre.tech) { font-family: var(--f-code); }
+:root[data-style] a { color: var(--accent, var(--teal)); text-underline-offset: 3px; }
+:root[data-style] .muted { color: var(--ink-3, var(--ink-2)); }
+
+/* surfaces */
+:root[data-style] :is(.card, .hw, details.more, .sel-card:not(.glass), .sat-card, .sensor, .rec-row, .ant-item, .help-q, .tutorial) {
+  background: var(--sf); border: var(--sw) solid var(--stroke); border-radius: var(--r); box-shadow: var(--elev); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: var(--ink); }
+:root[data-style] :is(.card, details.more, .sel-card:not(.glass), .sat-card, .sensor) { padding: var(--pad); }
+:root[data-style] .card .card, :root[data-style] .card .sensor { background: var(--sf-2); box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; border-radius: max(4px, calc(var(--r) - var(--pad) / 2)); }
+:root[data-style] details.more > summary { font-weight: 600; cursor: pointer; }
+:root[data-style] .card .sub, :root[data-style] .hw-sub { color: var(--ink-2); }
+:root[data-style] :is(.banner, .cta) { background: var(--sf-2); border: var(--sw) solid var(--stroke); border-radius: var(--r); color: var(--ink); box-shadow: none; }
+:root[data-style] .banner.warn { background: color-mix(in srgb, var(--warn) 12%, var(--sf)); border-color: color-mix(in srgb, var(--warn) 40%, transparent); }
+:root[data-style] .banner.bad { background: color-mix(in srgb, var(--bad) 12%, var(--sf)); border-color: color-mix(in srgb, var(--bad) 45%, transparent); }
+:root[data-style] .cta { background: color-mix(in srgb, var(--pri) 9%, var(--sf)); border-color: color-mix(in srgb, var(--pri) 22%, transparent); }
+:root[data-style] .empty { color: var(--ink-3, var(--ink-2)); text-align: center; padding: var(--s6, 24px) var(--s4, 16px); }
+:root[data-style] .empty strong { color: var(--ink); font-weight: 600; }
+
+/* controls */
+:root[data-style] .btn { font-family: var(--f-body); font-size: 14.5px; font-weight: 500; letter-spacing: 0; text-transform: none; min-height: 40px; padding: 0 16px; gap: 8px;
+  border-radius: var(--r-ctl); background: var(--ctl); color: var(--ctl-ink); border: var(--sw) solid var(--ctl-stroke); box-shadow: none; clip-path: none; }
+@media (hover: hover) and (pointer: fine) { :root[data-style] .btn:hover:not([disabled]) { background: var(--ctl-h); } :root[data-style] .btn.primary:hover:not([disabled]) { background: var(--pri); filter: brightness(1.08); } }
+:root[data-style] .btn.primary, :root[data-style] .soundbar .btn.primary { background: var(--pri); color: var(--pri-ink); border-color: transparent; font-weight: 600; }
+:root[data-style] .btn.danger { background: color-mix(in srgb, var(--bad) 14%, transparent); color: var(--bad); border-color: transparent; }
+:root[data-style] .btn.ghost { background: transparent; }
+:root[data-style] .btn.small { min-height: 32px; padding: 0 12px; font-size: 13.5px; }
+:root[data-style] .btn.big { min-height: 48px; padding: 0 22px; font-size: 16px; }
+:root[data-style] :is(.btn.on, .btn[aria-pressed="true"]) { background: var(--sel); color: var(--sel-ink); }
+:root[data-style] .btn[disabled] { opacity: .45; }
+:root[data-style] :is(.chip, .list-opt, .hw-chip) { font-family: var(--f-body); font-size: 13.5px; font-weight: 500; letter-spacing: 0; text-transform: none; min-height: 32px; padding: 0 12px;
+  border-radius: var(--r-chip); background: var(--ctl); color: var(--ctl-ink); border: var(--sw) solid var(--ctl-stroke); box-shadow: none; clip-path: none; }
+:root[data-style] :is(.chip, .list-opt)[aria-pressed="true"] { background: var(--sel); color: var(--sel-ink); border-color: transparent; }
+:root[data-style] :is(.seg, .mode-switch) { background: var(--sf-2); border: var(--sw) solid var(--stroke); border-radius: calc(var(--r-ctl) + 3px); padding: 3px; gap: 2px; box-shadow: none; }
+:root[data-style] :is(.seg, .mode-switch) button { font-family: var(--f-body); font-size: 13.5px; font-weight: 500; letter-spacing: 0; text-transform: none; min-height: 30px; padding: 0 12px;
+  border-radius: var(--r-ctl); background: transparent; color: var(--ink-2); border: 0; box-shadow: none; clip-path: none; }
+:root[data-style] :is(.seg, .mode-switch) button[aria-pressed="true"] { background: var(--sel); color: var(--sel-ink); box-shadow: none; }
+:root[data-style] :is(input[type=text], input[type=number], input[type=search], input[type=password], input[type=email], input[type=url], input[type=time], input[type=date], input[type=datetime-local], select, textarea) {
+  font-family: var(--f-body); font-size: 15px; color: var(--ink); background: var(--sf-2); border: var(--sw) solid var(--stroke); border-radius: var(--r-ctl); min-height: 40px; padding: 0 12px; box-shadow: none;
+  transition: border-color var(--d-quick, .15s) ease, box-shadow var(--d-quick, .15s) ease; }
+:root[data-style] textarea { padding: 10px 12px; }
+:root[data-style] :is(input, select, textarea):not([type=range]) { border-radius: var(--r-ctl); }
+:root[data-style] :is(input, select, textarea):focus { outline: none; border-color: var(--pri); box-shadow: 0 0 0 3px color-mix(in srgb, var(--pri) 25%, transparent); }
+:root[data-style] label.field { font-family: var(--f-body); font-size: 14px; font-weight: 500; color: var(--ink); text-transform: none; letter-spacing: 0; }
+:root[data-style] label.field .hint, :root[data-style] .hint { color: var(--ink-3, var(--ink-2)); font-weight: 400; }
+:root[data-style] .check { font-weight: 500; }
+:root[data-style] :is(.check input, input[type=checkbox], input[type=radio]) { accent-color: var(--pri); }
+:root[data-style] input[type=range] { -webkit-appearance: none; appearance: none; background: transparent; height: 28px; accent-color: var(--pri); }
+:root[data-style] input[type=range]::-webkit-slider-runnable-track { height: 4px; border-radius: 4px; background: color-mix(in srgb, currentColor 18%, transparent); }
+:root[data-style] input[type=range]::-moz-range-track { height: 4px; border-radius: 4px; background: color-mix(in srgb, currentColor 18%, transparent); }
+:root[data-style] input[type=range]::-moz-range-progress { height: 4px; border-radius: 4px; background: var(--pri); }
+:root[data-style] input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; margin-top: -7px; border-radius: 50%; background: #fff; border: 0; box-shadow: 0 0 0 1px #0002, 0 2px 6px #0004; transition: scale .15s var(--ease-out, ease); }
+:root[data-style] input[type=range]::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; background: #fff; border: 0; box-shadow: 0 0 0 1px #0002, 0 2px 6px #0004; }
+:root[data-style] input[type=range]:active::-webkit-slider-thumb { scale: 1.2; }
+:root[data-style] .switch i { background: color-mix(in srgb, var(--ink) 18%, transparent); }
+:root[data-style] .switch input:checked + i { background: var(--pri); }
+:root[data-style] .switch i::after { transition: transform .25s var(--ease-pop, ease); }
+
+/* data */
+:root[data-style] .tbl { border-collapse: collapse; }
+:root[data-style] .tbl th { font-family: var(--f-body); font-size: 12.5px; font-weight: 600; text-transform: none; letter-spacing: 0; color: var(--ink-3, var(--ink-2)); border-bottom: var(--sw) solid var(--stroke); background: transparent; }
+:root[data-style] .tbl td { border-bottom: 1px solid color-mix(in srgb, var(--ink) 6%, transparent); }
+@media (hover: hover) { :root[data-style] .tbl tbody tr:hover td { background: color-mix(in srgb, var(--ink) 4%, transparent); } }
+:root[data-style] .tbl tr.sel td, :root[data-style] .tbl tr.plane-sel td { background: color-mix(in srgb, var(--pri) 12%, transparent); }
+:root[data-style] :is(.badge, .pill) { font-family: var(--f-body); font-size: 12.5px; font-weight: 500; letter-spacing: 0; text-transform: none; font-style: normal; border-radius: var(--r-chip); background: var(--ctl); color: var(--ink-2); border: 0; padding: 3px 10px; clip-path: none; }
+:root[data-style] .badge.good, :root[data-style] .pill.ok { background: color-mix(in srgb, var(--good) 16%, transparent); color: var(--good); }
+:root[data-style] .badge.warn, :root[data-style] .pill.warn { background: color-mix(in srgb, var(--warn) 16%, transparent); color: var(--warn); }
+:root[data-style] .badge.bad { background: color-mix(in srgb, var(--bad) 16%, transparent); color: var(--bad); }
+:root[data-style] :is(.station, .chan, .tile:not(#hm-actions .tile), .th-card, .hw-opt) { background: var(--sf-2); border: var(--sw) solid var(--stroke); border-radius: max(6px, calc(var(--r) - 6px)); color: var(--ink); box-shadow: none; clip-path: none; }
+:root[data-style] :is(.station, .chan)[aria-current="true"], :root[data-style] .chan.cur { background: var(--sel); color: var(--sel-ink); border-color: transparent; }
+:root[data-style] .chan.hot { border-color: var(--sig); box-shadow: inset 0 0 0 1px var(--sig); }
+:root[data-style] .kv dt { color: var(--ink-3, var(--ink-2)); }
+:root[data-style] .kbd { border-radius: 5px; background: var(--ctl); border: 1px solid var(--stroke); padding: 0 5px; font-size: .85em; }
+:root[data-style] .progress, :root[data-style] .meter, :root[data-style] .hw-meter { background: color-mix(in srgb, var(--ink) 10%, transparent); border-radius: 99px; overflow: hidden; }
+:root[data-style] .progress i, :root[data-style] .hw-meter i { background: var(--pri); }
+
+/* overlays */
+:root[data-style] .modal { background: var(--sf); border: var(--sw) solid var(--stroke); border-radius: var(--r-pop); box-shadow: 0 40px 100px -30px #000a; color: var(--ink); clip-path: none; }
+:root[data-style] .modal-back { background: color-mix(in srgb, #000 55%, transparent); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+:root[data-style] .toast { font-family: var(--f-body); background: var(--ink); color: var(--chassis); border: 0; border-radius: min(var(--r-ctl), 12px); text-transform: none; letter-spacing: 0; box-shadow: 0 16px 40px -14px #0008; }
+:root[data-style] .toast.bad { background: var(--bad); color: #fff; }
+
+/* instrument surfaces: the controls inside them re-scope their tokens to the dark glass */
+:root[data-style] :is(.glass, .now-box, .sel-card.glass, .scope) {
+  --ctl: color-mix(in srgb, var(--inst-ink) 10%, transparent); --ctl-h: color-mix(in srgb, var(--inst-ink) 17%, transparent); --ctl-ink: var(--inst-ink); --ctl-stroke: transparent;
+  --stroke: color-mix(in srgb, var(--inst-ink) 14%, transparent); --sf-2: color-mix(in srgb, var(--inst-ink) 6%, transparent); --sel: var(--sig); --sel-ink: var(--sig-ink, #111); --ink: var(--inst-ink); --ink-2: color-mix(in srgb, var(--inst-ink) 72%, transparent); --ink-3: color-mix(in srgb, var(--inst-ink) 55%, transparent);
+  background: var(--inst); color: var(--inst-ink); border: var(--sw) solid var(--inst-stroke); border-radius: var(--r-inst, var(--r)); box-shadow: var(--inst-elev, none); background-image: none; clip-path: none; }
+:root[data-style] .freq { font-family: var(--f-num); font-weight: var(--w-num); letter-spacing: var(--tr-num); color: var(--sig); text-shadow: none; -webkit-text-fill-color: currentColor; background: none; }
+:root[data-style] .freq small { font-family: var(--f-body); font-weight: 500; font-size: max(16px, .14em); letter-spacing: 0; color: var(--inst-ink); opacity: .75; margin-left: .3em; text-transform: none; }
+:root[data-style] .station-name { font-family: var(--f-disp); font-weight: var(--w-disp); letter-spacing: -.02em; text-transform: none; font-style: normal; color: var(--inst-ink); }
+:root[data-style] .station-sub { color: color-mix(in srgb, var(--inst-ink) 70%, transparent); }
+:root[data-style] .strength i { background: color-mix(in srgb, var(--inst-ink) 18%, transparent); border-radius: 2px; }
+:root[data-style] .strength i.on { background: var(--sig); }
+
+/* chrome: top bar, tabs, sound bar, phone nav */
+:root[data-style] .topbar { background: var(--bar); border-bottom: var(--sw) solid var(--bar-stroke); -webkit-backdrop-filter: blur(18px) saturate(1.4); backdrop-filter: blur(18px) saturate(1.4); color: var(--ink); box-shadow: none; }
+:root[data-style] .brand { font-family: var(--f-disp); font-weight: var(--w-disp); letter-spacing: -.02em; text-transform: none; font-style: normal; color: var(--ink); }
+:root[data-style] .tab { font-family: var(--f-body); font-size: 14px; font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--ink-2); border-radius: var(--r-ctl); background: transparent; border: 0; box-shadow: none; clip-path: none; min-height: 38px; padding: 0 12px; }
+@media (hover: hover) { :root[data-style] .tab:hover { color: var(--ink); background: var(--ctl); } }
+:root[data-style] .tab[aria-selected="true"] { background: var(--tab-sel); color: var(--tab-sel-ink); }
+:root[data-style] .tab-sep { background: var(--stroke); }
+:root[data-style] .topbar .pill { background: transparent; border: 0; }
+:root[data-style] .soundbar { --ink: var(--inst-ink); --ctl: color-mix(in srgb, var(--inst-ink) 10%, transparent); --ctl-h: color-mix(in srgb, var(--inst-ink) 16%, transparent); --ctl-ink: var(--inst-ink); --stroke: color-mix(in srgb, var(--inst-ink) 14%, transparent);
+  background: var(--sb, var(--inst)); color: var(--inst-ink); border: 0; border-top: var(--sw) solid var(--stroke); box-shadow: none; clip-path: none; font-family: var(--f-body); }
+:root[data-style] .soundbar .now b { font-family: var(--f-body); font-weight: 600; text-transform: none; letter-spacing: 0; color: var(--inst-ink); }
+:root[data-style] .soundbar .now span { color: color-mix(in srgb, var(--inst-ink) 65%, transparent); font-family: var(--f-body); }
+:root[data-style] .mobile-nav { background: var(--sb, var(--inst)); border-color: color-mix(in srgb, var(--inst-ink) 12%, transparent); clip-path: none; }
+:root[data-style] .mobile-nav button { font-family: var(--f-body); font-weight: 500; text-transform: none; letter-spacing: 0; color: color-mix(in srgb, var(--inst-ink) 70%, transparent); background: transparent; border: 0; clip-path: none; }
+:root[data-style] .mobile-nav button[aria-selected="true"] { background: var(--pri); color: var(--pri-ink); }
+
+/* Home and Radio compositions (shared by every style unless a style says otherwise) */
+:root[data-style] .hw { padding: var(--pad); gap: 4px; min-height: 156px; }
+:root[data-style] .hw-lbl { font-family: var(--f-body); font-size: 13.5px; font-weight: 500; color: var(--ink-2); text-transform: none; letter-spacing: 0; }
+:root[data-style] .hw-big { font-family: var(--f-num); font-weight: var(--w-num); letter-spacing: var(--tr-num); }
+:root[data-style] .hw-grid { gap: var(--hw-gap, 12px); }
+:root[data-style] .hw-grid:not(.editing) .hw-s:is([data-id="now"], [data-id="signal"]) { grid-column: span 2; }
+:root[data-style] .hw:is([data-id="now"], [data-id="signal"]) .hw-big { font-size: clamp(56px, 6vw, 88px); line-height: .95; margin: 8px 0 4px; }
+:root[data-style] .hw-add { background: transparent; border-style: dashed; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; color: var(--ink-3, var(--ink-2)); }
+:root[data-style] .hw-meter i { width: 100%; transform-origin: left; transition: transform .4s var(--ease-out, ease); }
+:root[data-style] .hw[data-id="signal"] .hw-meter { height: 10px; margin: 12px 0 8px; }
+:root[data-style] #hm-title { font-family: var(--f-disp); font-weight: var(--w-disp); letter-spacing: var(--tr-disp); text-transform: var(--h-case); font-size: var(--h-hero, clamp(40px, 5vw, 72px)); line-height: .98; max-width: 18ch; }
+:root[data-style] #hm-actions { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 0 24px; }
+:root[data-style] #hm-actions .tile { display: grid; grid-template-columns: 44px minmax(0, 1fr); column-gap: 16px; row-gap: 2px; align-items: center; min-height: 0; padding: 16px 0;
+  border: 0; border-bottom: 1px solid var(--stroke); border-radius: 0; background: transparent; box-shadow: none; clip-path: none; transform: none; }
+:root[data-style] #hm-actions .tile svg { grid-row: 1 / 3; width: 22px; height: 22px; padding: 11px; box-sizing: content-box; border-radius: var(--r-ctl); background: var(--ctl); color: var(--ink); transition: background-color .15s ease, color .15s ease; }
+:root[data-style] #hm-actions .tile b { font-family: var(--f-body); font-size: 16px; font-weight: 600; letter-spacing: 0; text-transform: none; }
+:root[data-style] #hm-actions .tile span { font-size: 14px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (hover: hover) and (pointer: fine) { :root[data-style] #hm-actions .tile:hover svg { background: var(--pri); color: var(--pri-ink); } }
+:root[data-style] .hm-sec { font-family: var(--f-body); font-size: 15px; font-weight: 600; color: var(--ink-2); margin: 48px 0 4px; text-transform: none; letter-spacing: 0; }
+
+@media (min-width: 900px) {
+}
+/* pointer light on instruments (desktop): follows the cursor across the glass */
+:root[data-style] .dial-card::after { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 0; border-radius: inherit; opacity: 0; transition: opacity .4s ease;
+  background: radial-gradient(420px circle at var(--mx, 50%) var(--my, 50%), color-mix(in srgb, var(--inst-ink) 7%, transparent), transparent 60%); }
+:root[data-style] .dial-card.lit::after { opacity: 1; }
+
+@media (max-width: 760px) {
+  :root[data-style] .hw-grid:not(.editing) .hw-s:is([data-id="now"], [data-id="signal"]) { grid-column: span 2; }
+  :root[data-style] #hm-title { font-size: clamp(30px, 9vw, 44px); }
+  :root[data-style] #hm-actions { grid-template-columns: 1fr; }
+  :root[data-style] .page-head h2 { font-size: min(var(--h2), 40px); }
+}
+
+/* "Rack" layout: the instrument with a station rail beside it */
+@media (min-width: 1100px) {
+}
+
+/* ======================================================================================================== SKYWAVE
+   Spatial glass. Capsule controls and big soft panes float over a colour field whose hue follows the band you tune. */
+:root[data-style="skywave"] {
+  --f-disp: "V Jura", var(--f-body); --w-disp: 300; --w-num: 300; --tr-disp: -.03em; --tr-num: -.05em; --h2: clamp(44px, 5.4vw, 80px); --h-hero: clamp(56px, 7.4vw, 112px);
+  --r: 30px; --r-ctl: 999px; --pad: 24px; --r-inst: 36px;
+  --sf: color-mix(in srgb, var(--panel) 34%, transparent); --sf-2: color-mix(in srgb, #fff 6%, transparent); --stroke: color-mix(in srgb, #fff 12%, transparent);
+  --elev: inset 0 1px 0 color-mix(in srgb, #fff 18%, transparent), 0 30px 60px -36px #000c; --blur: blur(30px) saturate(1.7);
+  --ctl: color-mix(in srgb, #fff 9%, transparent); --ctl-h: color-mix(in srgb, #fff 15%, transparent);
+  --pri: #f2fff7; --pri-ink: #06190f; --sel: #f2fff7; --sel-ink: #06190f;
+  --bar: transparent; --bar-stroke: transparent; --tab-sel: color-mix(in srgb, #fff 16%, transparent); --tab-sel-ink: #fff;
+  --inst: color-mix(in srgb, var(--glass) 46%, transparent); --inst-stroke: color-mix(in srgb, #fff 13%, transparent); --inst-ink: #f4fff8;
+  --inst-elev: inset 0 1px 0 color-mix(in srgb, #fff 20%, transparent), 0 50px 100px -40px #000e; --sig: #fff;
+  --sb: color-mix(in srgb, var(--glass) 52%, transparent); --freq: clamp(120px, 15vw, 230px);
+}
+:root[data-style="skywave"] body { background: var(--chassis); }
+:root[data-style="skywave"] body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background: radial-gradient(55% 55% at 18% 12%, hsl(var(--fhue) 75% 42% / .75), transparent 70%), radial-gradient(45% 55% at 88% 78%, hsl(calc(var(--fhue) + 70) 80% 48% / .55), transparent 70%), radial-gradient(40% 40% at 60% 40%, hsl(calc(var(--fhue) - 50) 70% 30% / .5), transparent 70%); filter: blur(40px); }
+:root[data-style="skywave"] body::after { content: none; }
+:root[data-style="skywave"] .glass, :root[data-style="skywave"] .soundbar, :root[data-style="skywave"] .mobile-nav { -webkit-backdrop-filter: blur(36px) saturate(1.8); backdrop-filter: blur(36px) saturate(1.8); }
+:root[data-style="skywave"] .freq .sig-dot { background: hsl(var(--fhue) 90% 70%); }
+:root[data-style="skywave"] .strength i.on, :root[data-style="skywave"] .hw-meter i { background: hsl(var(--fhue) 85% 68%); }
+@media (min-width: 761px) {
+  :root[data-style="skywave"] .topbar { height: 84px; justify-content: space-between; }
+  :root[data-style="skywave"] .tabs { flex: none; margin: 0 auto; padding: 6px; gap: 2px; border-radius: 999px; background: color-mix(in srgb, var(--glass) 40%, transparent); border: 1px solid var(--stroke); box-shadow: var(--elev); -webkit-backdrop-filter: blur(30px) saturate(1.8); backdrop-filter: blur(30px) saturate(1.8); }
+  :root[data-style="skywave"] .tab { min-height: 40px; }
+  :root[data-style="skywave"] .soundbar { left: 50%; right: auto; translate: -50% 0; bottom: 20px; width: min(1000px, calc(100vw - 48px)); border-radius: 999px; border: 1px solid var(--stroke); box-shadow: var(--inst-elev); padding: 8px 10px; }
+  :root[data-style="skywave"] .glide { display: none; }
+}
+:root[data-style="skywave"] .hm-hero { flex-direction: column; align-items: center; text-align: center; padding: 48px 0 24px; }
+:root[data-style="skywave"] #hm-title { margin-inline: auto; max-width: 15ch; }
+:root[data-style="skywave"] .hm-kick, :root[data-style="skywave"] .hm-acts { justify-content: center; }
+:root[data-style="skywave"] #hm-line { margin-inline: auto; text-align: center; }
+@media (min-width: 900px) {
+}
+
+/* ======================================================================================================== AURORA
+   The observatory. Black and gold, the thinnest type, a column down the middle, a dock for navigation. */
+:root[data-style="aurora"] {
+  --f-disp: "V Poiret", "V Jura", sans-serif; --w-disp: 400; --w-num: 400; --tr-disp: -.01em; --tr-num: -.04em; --h2: clamp(48px, 6vw, 88px); --h-hero: clamp(52px, 7vw, 104px);
+  --r: 4px; --r-ctl: 2px; --r-chip: 2px; --pad: 24px;
+  --sf: color-mix(in srgb, var(--panel) 50%, transparent); --sf-2: color-mix(in srgb, var(--accent) 6%, transparent); --stroke: color-mix(in srgb, var(--accent) 22%, transparent);
+  --ctl: transparent; --ctl-stroke: color-mix(in srgb, var(--accent) 38%, transparent); --ctl-h: color-mix(in srgb, var(--accent) 12%, transparent); --ctl-ink: color-mix(in srgb, var(--accent) 55%, #fff);
+  --pri: var(--accent); --pri-ink: #140e02; --sel: var(--accent); --sel-ink: #140e02;
+  --bar: transparent; --bar-stroke: transparent; --tab-sel: transparent; --tab-sel-ink: var(--accent);
+  --inst: radial-gradient(130% 90% at 50% 0%, color-mix(in srgb, var(--accent) 14%, var(--glass)), var(--glass) 65%); --inst-stroke: color-mix(in srgb, var(--accent) 28%, transparent); --inst-ink: #fbf3df; --sig: color-mix(in srgb, var(--accent) 35%, #fff);
+  --sb: color-mix(in srgb, var(--glass) 88%, transparent); --freq: clamp(120px, 16vw, 240px);
+}
+:root[data-style="aurora"] body { background: radial-gradient(90% 50% at 50% -10%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 70%), var(--chassis); background-attachment: fixed; }
+:root[data-style="aurora"] .glass { background: var(--inst); }
+:root[data-style="aurora"] :is(.btn, .chip) { clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%); padding-inline: 20px; }
+:root[data-style="aurora"] main { max-width: 1040px; }
+:root[data-style="aurora"] :is(.page-head, .hm-hero) { flex-direction: column; align-items: center; text-align: center; }
+:root[data-style="aurora"] .page-head p { margin-inline: auto; }
+:root[data-style="aurora"] #hm-title { margin-inline: auto; }
+:root[data-style="aurora"] :is(.hm-kick, .hm-acts) { justify-content: center; }
+:root[data-style="aurora"] #hm-line { margin-inline: auto; }
+:root[data-style="aurora"] h3 { text-align: left; }
+@media (min-width: 761px) {
+  :root[data-style="aurora"] .topbar { height: 72px; }
+  :root[data-style="aurora"] .tabs { position: fixed; z-index: 31; left: 50%; translate: -50% 0; bottom: 92px; flex: none; padding: 6px 10px; gap: 0; background: color-mix(in srgb, var(--glass) 85%, transparent); border: 1px solid var(--stroke); border-radius: 6px; -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); box-shadow: 0 20px 50px -20px #000; }
+  :root[data-style="aurora"] .tab { flex-direction: column; gap: 3px; font-size: 11px; min-height: 52px; padding: 4px 9px; }
+  :root[data-style="aurora"] .tab .t { display: block !important; }
+  :root[data-style="aurora"] main { padding-bottom: 220px; }
+}
+
+/* ======================================================================================================== CLASSIC
+   Daylight instrument maker. White and stone, a black instrument with a lit readout, tight grotesque type. */
+:root[data-style="classic"] {
+  --f-body: "V Sans", "V Inter", system-ui, sans-serif; --f-disp: var(--f-body); --w-disp: 700; --w-num: 700; --tr-disp: -.045em; --tr-num: -.06em; --h2: clamp(40px, 4.6vw, 64px);
+  --r: 24px; --r-ctl: 12px; --r-chip: 999px; --pad: 22px; --r-inst: 30px;
+  --sf: var(--panel); --sf-2: color-mix(in srgb, var(--ink) 4%, var(--panel)); --stroke: color-mix(in srgb, var(--ink) 8%, transparent);
+  --elev: 0 1px 1px #0000000a, 0 2px 4px #0000000a, 0 16px 32px -16px #0000001f;
+  --sel: var(--ink); --sel-ink: var(--panel); --bar: color-mix(in srgb, var(--panel) 80%, transparent); --tab-sel: var(--ink); --tab-sel-ink: var(--panel);
+  --inst: #0c0d0e; --inst-ink: #f3f1ec; --inst-elev: 0 2px 4px #0003, 0 40px 80px -40px #0008;
+}
+:root[data-style="classic"][data-theme="dark"] { --inst: #050506; --elev: none; }
+:root[data-style="classic"] body { background: color-mix(in srgb, var(--chassis) 70%, var(--panel)); }
+:root[data-style="classic"] .btn.primary { box-shadow: 0 1px 0 #ffffff40 inset, 0 8px 18px -8px color-mix(in srgb, var(--pri) 80%, transparent); }
+@media (min-width: 761px) {
+  :root[data-style="classic"] .topbar { height: 68px; }
+  :root[data-style="classic"] .tabs { flex: none; margin: 0 auto; background: var(--sf-2); border-radius: 15px; padding: 4px; gap: 2px; }
+  :root[data-style="classic"] .soundbar { left: 24px; right: 24px; bottom: 16px; border-radius: 22px; box-shadow: 0 30px 60px -30px #0009; padding: 10px 12px; }
+}
+
+/* ======================================================================================================== LUMEN
+   The pro workspace. A sidebar, dense 14 px type, hairlines and surface steps, off-white actions, violet for selection. */
+:root[data-style="lumen"] {
+  --w-disp: 600; --w-num: 500; --tr-num: -.055em; --h2: clamp(28px, 2.8vw, 38px);
+  --r: 12px; --r-ctl: 8px; --r-chip: 6px; --pad: 18px; --r-inst: 14px; --hw-gap: 10px;
+  --bg: #08070c; --sf: color-mix(in srgb, var(--panel) 70%, #08070c); --sf-2: color-mix(in srgb, #fff 4%, transparent); --stroke: color-mix(in srgb, #fff 8%, transparent);
+  --ctl: color-mix(in srgb, #fff 6%, transparent); --ctl-h: color-mix(in srgb, #fff 10%, transparent); --ctl-stroke: color-mix(in srgb, #fff 8%, transparent);
+  --pri: #f1eefa; --pri-ink: #130e22; --sel: color-mix(in srgb, var(--accent) 26%, transparent); --sel-ink: #fff;
+  --bar: #0c0a12; --bar-stroke: color-mix(in srgb, #fff 7%, transparent); --tab-sel: color-mix(in srgb, #fff 8%, transparent); --tab-sel-ink: #fff;
+  --inst: #0d0b14; --inst-stroke: color-mix(in srgb, #fff 9%, transparent); --inst-ink: #f4f1fb; --sig: #fff; --freq: clamp(96px, 11vw, 160px);
+}
+:root[data-style="lumen"] body { font-size: 14px; }
+:root[data-style="lumen"] .btn { font-size: 13.5px; min-height: 34px; }
+:root[data-style="lumen"] .freq .sig-dot, :root[data-style="lumen"] .strength i.on { background: var(--accent); }
+@media (min-width: 761px) {
+  :root[data-style="lumen"] .topbar { position: fixed; inset: 0 auto 0 0; width: 236px; height: auto; flex-direction: column; align-items: stretch; padding: 18px 12px; gap: 14px; border-bottom: 0; border-right: 1px solid var(--bar-stroke); overflow-y: auto; }
+  :root[data-style="lumen"] .tabs { flex-direction: column; flex: 1; gap: 1px; overflow: visible; }
+  :root[data-style="lumen"] .tab { justify-content: flex-start; min-height: 32px; padding: 0 10px; font-size: 13.5px; }
+  :root[data-style="lumen"] .tab .t { display: inline !important; }
+  :root[data-style="lumen"] .tab svg { width: 17px; height: 17px; }
+  :root[data-style="lumen"] .tab-sep { width: auto; height: 1px; margin: 8px 6px; }
+  :root[data-style="lumen"] .top-right { flex-direction: column; align-items: stretch; }
+  :root[data-style="lumen"] main { margin-left: 236px; width: auto; max-width: none; padding-inline: 40px; }
+  :root[data-style="lumen"] .soundbar { left: 236px; }
+  :root[data-style="lumen"] .glide { display: none; }
+}
+
+/* ======================================================================================================== BENTO
+   The toy box. Chunky pastel blocks, pill buttons that press down, huge rounded numbers, a floating island. */
+:root[data-style="bento"] {
+  --f-body: "V Bricolage", system-ui, sans-serif; --w-disp: 800; --w-num: 800; --tr-disp: -.055em; --tr-num: -.07em; --h2: clamp(48px, 6vw, 92px); --h-hero: clamp(52px, 6.6vw, 104px);
+  --r: 32px; --r-ctl: 999px; --r-chip: 999px; --pad: 26px; --r-inst: 40px; --hw-gap: 14px;
+  --sf: var(--panel); --sf-2: color-mix(in srgb, var(--ink) 5%, var(--panel)); --stroke: transparent; --sw: 2px;
+  --ctl: var(--panel); --ctl-stroke: var(--ink); --ctl-h: color-mix(in srgb, var(--ink) 6%, var(--panel)); --pri: var(--accent); --sel: var(--ink); --sel-ink: var(--panel);
+  --bar: transparent; --bar-stroke: transparent; --tab-sel: var(--accent); --tab-sel-ink: var(--on-teal);
+  --inst: #17161c; --inst-ink: #fff8ec; --freq: clamp(130px, 16vw, 250px);
+}
+:root[data-style="bento"] .btn, :root[data-style="bento"] .chip { box-shadow: 0 3px 0 var(--ink); transition: translate .12s var(--ease-out), box-shadow .12s var(--ease-out); }
+:root[data-style="bento"] .btn.primary { box-shadow: 0 3px 0 var(--ink); border: 2px solid var(--ink); }
+:root[data-style="bento"] .btn:active, :root[data-style="bento"] .chip:active { translate: 0 3px; box-shadow: 0 0 0 var(--ink); scale: 1; }
+:root[data-style="bento"] .glass .btn, :root[data-style="bento"] .glass .chip, :root[data-style="bento"] .soundbar .btn { box-shadow: none; border-color: transparent; }
+:root[data-style="bento"] .hw-grid > .hw:nth-child(5n+1) { background: color-mix(in srgb, var(--accent) 16%, var(--panel)); }
+:root[data-style="bento"] .hw-grid > .hw:nth-child(5n+2) { background: color-mix(in srgb, #ffb547 30%, var(--panel)); }
+:root[data-style="bento"] .hw-grid > .hw:nth-child(5n+3) { background: color-mix(in srgb, #3fb68b 22%, var(--panel)); }
+:root[data-style="bento"] .hw-grid > .hw:nth-child(5n+4) { background: color-mix(in srgb, #ef6a9a 18%, var(--panel)); }
+:root[data-style="bento"] .hw-grid > .hw:nth-child(5n) { background: color-mix(in srgb, #8c7cf0 20%, var(--panel)); }
+:root[data-style="bento"] #hm-actions .tile svg { border-radius: 16px; }
+@media (min-width: 900px) {
+  :root[data-style="bento"] .hw-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); grid-auto-rows: minmax(160px, auto); }
+  :root[data-style="bento"] .hw-grid:not(.editing) .hw-s:is([data-id="now"], [data-id="signal"]) { grid-column: span 2; grid-row: span 2; justify-content: flex-end; }
+  :root[data-style="bento"] .hw-grid:not(.editing) .hw-s:is([data-id="now"], [data-id="signal"]) .hw-big { font-size: clamp(96px, 10vw, 160px); }
+  :root[data-style="bento"] .hw-grid .hw-l { grid-column: span 4; }
+}
+@media (min-width: 761px) {
+  :root[data-style="bento"] .topbar { height: 92px; }
+  :root[data-style="bento"] .tabs { flex: none; margin: 0 auto; padding: 6px; border-radius: 999px; background: var(--panel); box-shadow: 0 2px 0 var(--ink), 0 0 0 2px var(--ink); }
+  :root[data-style="bento"] .tab { border-radius: 999px; font-weight: 600; }
+  :root[data-style="bento"] .soundbar { left: 50%; right: auto; translate: -50% 0; bottom: 18px; width: min(1000px, calc(100vw - 40px)); border-radius: 999px; padding: 8px 10px; box-shadow: 0 4px 0 #000; }
+  :root[data-style="bento"] .glide { display: none; }
+}
+
+/* ======================================================================================================== FOLIO
+   The broadsheet. A masthead and a numbered index, enormous serif headlines, rules instead of boxes, one red. */
+:root[data-style="folio"] {
+  --f-body: "V Sans", system-ui, sans-serif; --f-disp: "V Serif", Georgia, serif; --f-code: "V Geist Mono", ui-monospace, monospace; --w-disp: 400; --w-num: 400; --tr-disp: -.025em; --tr-num: -.04em;
+  --h2: clamp(72px, 10vw, 152px); --h-hero: clamp(64px, 8.4vw, 136px);
+  --r: 0; --r-ctl: 0; --r-chip: 0; --pad: 0; --r-inst: 0;
+  --sf: transparent; --sf-2: color-mix(in srgb, var(--ink) 4%, transparent); --stroke: color-mix(in srgb, var(--ink) 16%, transparent);
+  --ctl: transparent; --ctl-stroke: var(--ink); --ctl-h: color-mix(in srgb, var(--ink) 6%, transparent); --pri: var(--ink); --pri-ink: var(--panel); --sel: var(--ink); --sel-ink: var(--panel);
+  --bar: var(--chassis); --bar-stroke: var(--ink); --tab-sel: transparent; --tab-sel-ink: var(--ink);
+  --inst: #0f0f0f; --inst-ink: #f6f3ee; --sig: #fff; --freq: clamp(140px, 17vw, 260px);
+}
+:root[data-style="folio"] :is(.card, .hw, details.more, .sat-card, .sensor) { border: 0; border-top: 1px solid var(--ink); padding: 16px 0 0; }
+:root[data-style="folio"] .card .card { border-top-color: var(--stroke); }
+:root[data-style="folio"] h3 { font-family: var(--f-disp); font-size: 26px; font-weight: 400; letter-spacing: -.01em; }
+:root[data-style="folio"] .hw-big { font-family: var(--f-disp); }
+:root[data-style="folio"] .freq .sig-dot, :root[data-style="folio"] .strength i.on { background: var(--accent); }
+:root[data-style="folio"] .tabs { counter-reset: idx; }
+:root[data-style="folio"] .tab::before { counter-increment: idx; content: counter(idx, decimal-leading-zero); font-family: var(--f-code); font-size: 10.5px; color: var(--ink-3, var(--ink-2)); margin-right: 2px; align-self: flex-start; padding-top: 4px; }
+:root[data-style="folio"] .tab[aria-selected="true"] { box-shadow: inset 0 -2px 0 var(--accent); }
+:root[data-style="folio"] .tab svg { display: none; }
+:root[data-style="folio"] .tab .t { display: inline !important; }
+:root[data-style="folio"] .hm-hero { border-bottom: 1px solid var(--ink); padding-bottom: 28px; }
+:root[data-style="folio"] .hm-sec { font-family: var(--f-disp); font-size: 34px; font-weight: 400; color: var(--ink); }
+:root[data-style="folio"] #hm-actions .tile svg { background: none; color: var(--ink); padding: 0; }
+@media (min-width: 761px) {
+  :root[data-style="folio"] .topbar { height: auto; flex-wrap: wrap; padding: 20px 40px 0; row-gap: 12px; border-bottom: 1px solid var(--ink); }
+  :root[data-style="folio"] .brand { font-size: 44px; order: 0; }
+  :root[data-style="folio"] .brand img { display: none; }
+  :root[data-style="folio"] .top-right { order: 1; margin-left: auto; }
+  :root[data-style="folio"] .tabs { order: 2; flex: 1 1 100%; border-top: 1px solid var(--ink); padding: 4px 0; gap: 0; flex-wrap: wrap; overflow: visible; }
+  :root[data-style="folio"] .tab { min-height: 36px; padding: 0 14px 0 0; }
+  :root[data-style="folio"] .tab-sep { display: none; }
+  :root[data-style="folio"] .hw-grid { column-gap: 0; row-gap: 40px; }
+  :root[data-style="folio"] .hw-grid > .hw { border-top: 0; border-left: 1px solid var(--stroke); padding: 0 24px; }
+  :root[data-style="folio"] .soundbar { border-radius: 0; }
+  :root[data-style="folio"] .glide { display: none; }
+}
+
+/* ======================================================================================================== TERMINAL
+   The tty. Monospace everything, framed panes with their names in the border, a status line, the cursor's colour. */
+:root[data-style="terminal"] {
+  --f-body: "V Mono", ui-monospace, monospace; --f-disp: var(--f-body); --w-disp: 700; --w-num: 700; --tr-disp: -.04em; --tr-num: -.06em; --h2: clamp(32px, 3.6vw, 52px);
+  --r: 0; --r-ctl: 0; --r-chip: 0; --pad: 18px; --r-inst: 0;
+  --bg: #000; --sf: #000; --sf-2: color-mix(in srgb, var(--accent) 5%, #000); --stroke: color-mix(in srgb, var(--accent) 30%, transparent);
+  --ctl: transparent; --ctl-stroke: color-mix(in srgb, var(--accent) 45%, transparent); --ctl-h: color-mix(in srgb, var(--accent) 14%, transparent); --ctl-ink: var(--ink);
+  --pri: var(--accent); --pri-ink: #000; --sel: var(--accent); --sel-ink: #000;
+  --bar: #000; --bar-stroke: color-mix(in srgb, var(--accent) 30%, transparent); --tab-sel: var(--accent); --tab-sel-ink: #000;
+  --inst: #000; --inst-stroke: color-mix(in srgb, var(--accent) 50%, transparent); --inst-ink: var(--ink); --freq: clamp(96px, 12vw, 170px);
+}
+:root[data-style="terminal"] body { font-size: 14px; }
+:root[data-style="terminal"] :is(.card, details.more, .glass, .hw) { position: relative; }
+:root[data-style="terminal"] .card > h3:first-child, :root[data-style="terminal"] .card-head h3 { display: inline-block; background: var(--sf); padding: 0 8px; margin: calc(var(--pad) * -1 - 9px) 0 8px -8px; font-size: 13px; color: var(--accent); }
+:root[data-style="terminal"] h3::before { content: "[ "; color: var(--ink-3); } :root[data-style="terminal"] h3::after { content: " ]"; color: var(--ink-3); }
+:root[data-style="terminal"] .page-head h2::before { content: "~/"; color: var(--accent); }
+:root[data-style="terminal"] #hm-title::before { content: "> "; color: var(--accent); }
+:root[data-style="terminal"] .tabs { counter-reset: win; }
+:root[data-style="terminal"] .tab::before { counter-increment: win; content: counter(win) ":"; color: var(--ink-3); }
+:root[data-style="terminal"] .tab[aria-selected="true"]::before { color: #000; }
+:root[data-style="terminal"] .tab svg { display: none; }
+:root[data-style="terminal"] .tab .t { display: inline !important; }
+:root[data-style="terminal"] .freq .dp { margin: 0 -.2em; }
+:root[data-style="terminal"] .toast { background: #000; color: var(--accent); border: 1px solid var(--accent); }
+@media (min-width: 761px) {
+  :root[data-style="terminal"] .topbar { height: 40px; padding: 0 12px; }
+  :root[data-style="terminal"] .tab { min-height: 26px; padding: 0 8px; font-size: 12.5px; gap: 2px; }
+  :root[data-style="terminal"] .brand span { font-size: 14px; }
+  :root[data-style="terminal"] .soundbar { padding: 4px 12px; border-top: 1px solid var(--accent); --sb: #000; }
+  :root[data-style="terminal"] .glide { display: none; }
+}
+
+/* ======================================================================================================== BRUT
+   The poster. Thick ink, blocks that share their borders, giant capitals, hard shadows, an acid accent. */
+:root[data-style="brut"] {
+  --f-body: "V Sans", system-ui, sans-serif; --f-disp: "V Bricolage", var(--f-body); --w-disp: 800; --w-num: 800; --tr-disp: -.065em; --tr-num: -.075em; --h-case: uppercase;
+  --h2: clamp(84px, 13vw, 200px); --h-hero: clamp(56px, 7.2vw, 112px);
+  --r: 0; --r-ctl: 0; --r-chip: 0; --pad: 22px; --r-inst: 0; --sw: 3px; --hw-gap: 0px;
+  --sf: var(--panel); --sf-2: var(--chassis); --stroke: var(--ink);
+  --ctl: var(--panel); --ctl-stroke: var(--ink); --ctl-h: var(--amber); --pri: var(--ink); --pri-ink: var(--panel); --sel: var(--amber); --sel-ink: #000;
+  --bar: var(--chassis); --bar-stroke: var(--ink); --tab-sel: var(--ink); --tab-sel-ink: var(--panel);
+  --inst: #0a0a0a; --inst-stroke: var(--ink); --inst-ink: #f2f2f0; --freq: clamp(150px, 19vw, 300px); --bw: 3px; --bd: 3px solid var(--ink);
+}
+:root[data-style="brut"] .btn { font-weight: 700; text-transform: uppercase; }
+:root[data-style="brut"] .btn.primary { box-shadow: 5px 5px 0 var(--amber); }
+:root[data-style="brut"] .btn.primary:active { translate: 5px 5px; box-shadow: 0 0 0 var(--amber); scale: 1; }
+@media (min-width: 761px) { :root[data-style="brut"] .hw-grid > .hw, :root[data-style="brut"] .two-col .card { margin: 0 -3px -3px 0; } }
+:root[data-style="brut"] .stack { gap: 0; } :root[data-style="brut"] .stack > .card + .card { margin-top: -3px; }
+:root[data-style="brut"] .hw:is([data-id="now"], [data-id="signal"]) { background: var(--ink); color: var(--panel); --ink-2: color-mix(in srgb, var(--panel) 70%, transparent); }
+:root[data-style="brut"] .hw[data-id="signal"] .hw-meter i { background: var(--amber); }
+:root[data-style="brut"] #hm-actions { gap: 0; border-top: 3px solid var(--ink); }
+:root[data-style="brut"] #hm-actions .tile { border-bottom: 3px solid var(--ink); padding: 18px 8px; }
+:root[data-style="brut"] #hm-actions .tile svg { border-radius: 0; background: var(--ink); color: var(--panel); }
+:root[data-style="brut"] #hm-actions .tile b { font-family: var(--f-disp); font-weight: 800; text-transform: uppercase; font-size: 22px; letter-spacing: -.04em; }
+:root[data-style="brut"] .hm-hero { border-bottom: 3px solid var(--ink); padding-bottom: 24px; }
+:root[data-style="brut"] .tab { font-weight: 700; text-transform: uppercase; }
+@media (min-width: 761px) {
+  :root[data-style="brut"] .topbar { height: auto; min-height: 64px; padding: 0; gap: 0; border-bottom: 3px solid var(--ink); }
+  :root[data-style="brut"] .brand { padding: 0 20px; align-self: stretch; border-right: 3px solid var(--ink); font-size: 22px; text-transform: uppercase; }
+  :root[data-style="brut"] .tabs { align-self: stretch; gap: 0; flex-wrap: wrap; }
+  :root[data-style="brut"] .tab { min-height: 32px; height: auto; padding: 0 14px; border-right: 3px solid var(--ink); }
+  :root[data-style="brut"] .tab svg { display: none; }
+  :root[data-style="brut"] .tab .t { display: inline !important; }
+  :root[data-style="brut"] .tab-sep { display: none; }
+  :root[data-style="brut"] .top-right { align-self: stretch; border-left: 3px solid var(--ink); padding: 0 12px; }
+  :root[data-style="brut"] .soundbar { border-top: 3px solid var(--ink); }
+  :root[data-style="brut"] .glide { height: 6px; border-radius: 0; background: var(--amber); }
+}
+
+/* ======================================================================================================== TICKET
+   The boarding pass. Paper stubs with notches and a perforation, ink stamps, a barcode on the instrument. */
+:root[data-style="ticket"] {
+  --f-body: "V Sans", system-ui, sans-serif; --f-disp: "V Bricolage", var(--f-body); --f-code: "V Geist Mono", monospace; --w-disp: 800; --w-num: 800; --tr-disp: -.055em; --tr-num: -.07em; --h2: clamp(52px, 6.6vw, 104px);
+  --r: 14px; --r-ctl: 8px; --r-chip: 4px; --pad: 22px; --r-inst: 18px;
+  --sf: color-mix(in srgb, var(--panel) 92%, #fff); --sf-2: color-mix(in srgb, var(--ink) 5%, var(--panel)); --stroke: transparent; --elev: 0 1px 0 #0000001a, 0 14px 30px -18px #0003;
+  --sel: var(--ink); --sel-ink: var(--panel); --tab-sel: var(--ink); --tab-sel-ink: var(--panel); --bar: color-mix(in srgb, var(--chassis) 90%, transparent);
+  --inst: var(--glass); --inst-ink: #fbf6ea; --freq: clamp(130px, 16vw, 240px);
+}
+:root[data-style="ticket"] :is(.card, .hw, .glass) { -webkit-mask: radial-gradient(circle 11px at 0 50%, #0000 98%, #000) left / 51% 100% no-repeat, radial-gradient(circle 11px at 100% 50%, #0000 98%, #000) right / 51% 100% no-repeat; mask: radial-gradient(circle 11px at 0 50%, #0000 98%, #000) left / 51% 100% no-repeat, radial-gradient(circle 11px at 100% 50%, #0000 98%, #000) right / 51% 100% no-repeat; }
+:root[data-style="ticket"] .hw { border-top: 2px dashed color-mix(in srgb, var(--ink) 18%, transparent); }
+:root[data-style="ticket"] .badge, :root[data-style="ticket"] .pill:not(.topbar .pill) { font-family: var(--f-code); border: 1.5px solid currentColor; background: transparent; rotate: -2deg; }
+:root[data-style="ticket"] .hw-lbl { font-family: var(--f-code); font-size: 12px; }
+:root[data-style="ticket"] .hw:is([data-id="now"], [data-id="signal"]) { background: var(--glass); --ink: #fbf6ea; --ink-2: #fbf6eab3; color: #fbf6ea; }
+:root[data-style="ticket"] .hw:is([data-id="now"], [data-id="signal"]) .hw-big { color: var(--amber); }
+@media (min-width: 761px) { :root[data-style="ticket"] .soundbar { left: 24px; right: 24px; bottom: 14px; border-radius: 14px; } }
+
+/* ======================================================================================================== CONSOLE
+   The hi-fi faceplate. Brushed panels, keys that travel, a recessed lit display, indicator LEDs on pressed keys. */
+:root[data-style="console"] {
+  --f-num: "V B612", "V Mono", monospace; --w-disp: 600; --w-num: 700; --tr-num: -.02em; --h2: clamp(32px, 3.4vw, 48px);
+  --r: 10px; --r-ctl: 7px; --r-chip: 6px; --pad: 20px; --r-inst: 8px;
+  --sf: linear-gradient(180deg, color-mix(in srgb, #fff 6%, var(--panel)), var(--panel) 60%); --sf-2: color-mix(in srgb, #000 30%, var(--panel)); --stroke: color-mix(in srgb, #000 60%, transparent);
+  --elev: inset 0 1px 0 color-mix(in srgb, #fff 9%, transparent), 0 1px 0 #000a, 0 12px 24px -12px #000c;
+  --ctl: linear-gradient(180deg, color-mix(in srgb, #fff 12%, var(--panel)), color-mix(in srgb, #000 10%, var(--panel))); --ctl-h: linear-gradient(180deg, color-mix(in srgb, #fff 17%, var(--panel)), var(--panel)); --ctl-stroke: #000;
+  --pri: linear-gradient(180deg, color-mix(in srgb, #fff 18%, var(--accent)), var(--accent)); --pri-ink: #1a0600; --sel: var(--sf-2); --sel-ink: var(--accent);
+  --bar: linear-gradient(180deg, color-mix(in srgb, #fff 5%, var(--panel)), var(--panel)); --bar-stroke: #000; --tab-sel: var(--sf-2); --tab-sel-ink: var(--accent);
+  --inst: radial-gradient(120% 120% at 50% 0%, color-mix(in srgb, var(--accent) 8%, #070505), #050404); --inst-stroke: #000; --inst-ink: #f2e8e2;
+  --inst-elev: inset 0 3px 14px #000, inset 0 0 0 1px #ffffff0d, 0 1px 0 #ffffff14; --sig: var(--led, #ff8a3d);
+}
+:root[data-style="console"] :is(.card, .hw, details.more) { background: var(--sf); }
+:root[data-style="console"] .btn, :root[data-style="console"] .chip { background: var(--ctl); border-bottom-width: 3px; box-shadow: inset 0 1px 0 #ffffff1f; transition: translate .08s ease, border-bottom-width .08s ease; }
+:root[data-style="console"] .btn:active, :root[data-style="console"] .chip:active { translate: 0 2px; border-bottom-width: 1px; scale: 1; }
+:root[data-style="console"] .btn.primary { background: var(--pri); }
+:root[data-style="console"] :is(.chip, .btn)[aria-pressed="true"], :root[data-style="console"] .btn.on { background: var(--sf-2); box-shadow: inset 0 2px 6px #000c; }
+:root[data-style="console"] :is(.chip, .btn, .seg button, .mode-switch button)[aria-pressed="true"]::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px var(--accent); flex: none; }
+:root[data-style="console"] .freq { text-shadow: 0 0 24px color-mix(in srgb, var(--sig) 45%, transparent); }
+:root[data-style="console"] .freq .dp { margin: 0 -.2em; }
+:root[data-style="console"] .hw:is([data-id="now"], [data-id="signal"]) { background: var(--inst); box-shadow: var(--inst-elev); --ink: #f2e8e2; color: #f2e8e2; }
+:root[data-style="console"] .hw:is([data-id="now"], [data-id="signal"]) .hw-big { color: var(--sig); font-family: var(--f-num); text-shadow: 0 0 20px color-mix(in srgb, var(--sig) 40%, transparent); }
+:root[data-style="console"] #hm-actions .tile svg { border-radius: 50%; background: var(--ctl); box-shadow: inset 0 1px 0 #ffffff26, 0 2px 4px #000a; color: var(--accent); }
+@media (min-width: 761px) { :root[data-style="console"] .soundbar { border-top: 1px solid #000; box-shadow: inset 0 1px 0 #ffffff12; --sb: linear-gradient(180deg, color-mix(in srgb, #fff 6%, var(--panel)), var(--panel)); } }
+
+/* which styles use the rack layout for Radio */
+:root:is([data-style="classic"], [data-style="lumen"], [data-style="terminal"], [data-style="console"], [data-style="ticket"], [data-style="brut"], [data-style="bento"]) { --layout: rack; }
+
+/* ---------------------------------------------------------------- layout details shared by every style */
+/* centred heroes stack, so the text block must not keep its row width as height */
+:root[data-style] .hm-hero[style], :root:is([data-style="skywave"], [data-style="aurora"]) .hm-hero-main { flex: none; width: 100%; }
+/* a fixed dock inside a blurred bar would be pinned to the bar, not the window */
+:root[data-style="aurora"] .topbar { -webkit-backdrop-filter: none; backdrop-filter: none; }
+/* capsule navs: icons only, the open page also shows its name, so the bar never runs off the edge */
+@media (min-width: 761px) {
+  :root:is([data-style="skywave"], [data-style="classic"], [data-style="bento"]) .tab:not([aria-selected="true"]) .t { display: none !important; }
+  :root:is([data-style="skywave"], [data-style="classic"], [data-style="bento"]) .tab:not([aria-selected="true"]) { padding: 0 11px; }
+  :root:is([data-style="skywave"], [data-style="classic"], [data-style="bento"]) .tab[aria-selected="true"] .t { display: inline !important; }
+}
+:root[data-style="console"] :is(.chip, .btn)[aria-pressed="true"], :root[data-style="console"] .btn.on { color: var(--accent); }
+:root[data-style="brut"] .sx-marquee { margin: 0 0 24px; border: 3px solid var(--ink); }
+:root[data-style] :is(.list-opt, .station, .chan)[aria-pressed="true"] :is(span, small, .muted, .small) { color: inherit; opacity: .78; }
+@media (min-width: 761px) { :root[data-style="folio"] .brand span { display: inline !important; } :root[data-style="folio"] .brand { min-width: 0; } }
+
+/* ================================================================ every page: the pieces each page is built from */
+
+/* Page heads: a headline, then one calm line of explanation under it (never squeezed beside it). */
+:root[data-style] .page-head { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; margin-bottom: 28px; }
+:root[data-style] .page-head.row { flex-direction: row; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; }
+:root[data-style] .page-head > p, :root[data-style] .page-head > div > p { margin: 0; max-width: 62ch; font-size: 16.5px; line-height: 1.5; color: var(--ink-2); }
+:root[data-style="aurora"] .page-head { align-items: center; }
+:root[data-style="brut"] .page:not(#p-home) .page-head h2 { font-size: clamp(72px, 10vw, 150px); }
+
+/* Notices: a quiet panel with a coloured edge, the first line is the headline */
+:root[data-style] .banner { padding: 14px 18px; box-shadow: inset 3px 0 0 var(--ink-3, var(--ink-2)); }
+:root[data-style] .banner.warn { box-shadow: inset 3px 0 0 var(--warn); }
+:root[data-style] .banner.bad { box-shadow: inset 3px 0 0 var(--bad); }
+:root[data-style] .banner.slim { box-shadow: none; }
+:root[data-style] .banner .txt strong { display: block; font-weight: 600; margin-bottom: 2px; }
+:root[data-style] .banner.slim .txt strong { display: inline; margin: 0 8px 0 0; }
+:root[data-style] .card .banner { margin: 12px 0; }
+
+/* Figures: big tabular numbers with a small label, divided by hairlines */
+:root[data-style] .stat-row { gap: 0; }
+:root[data-style] .stat-row > div { padding: 2px 28px 2px 0; margin-right: 28px; border-right: 1px solid var(--stroke); }
+:root[data-style] .stat-row > div:last-child { border-right: 0; }
+:root[data-style] .stat-row b { font-family: var(--f-num); font-weight: var(--w-num); letter-spacing: var(--tr-num); font-size: clamp(30px, 3.2vw, 44px); line-height: 1.05; }
+:root[data-style] .stat-row span { font-size: 13.5px; color: var(--ink-2); margin-top: 4px; }
+@media (max-width: 760px) { :root[data-style] .stat-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 0; } :root[data-style] .stat-row > div { margin: 0; padding: 0 12px 0 0; border: 0; } }
+
+/* Forms: label over control with a fixed gap, groups apart, rows align on the control */
+:root[data-style] label.field { display: flex; flex-direction: column; gap: 6px; }
+:root[data-style] label.field > :is(input, select, textarea) { width: 100%; }
+:root[data-style] :is(label.field, .row, .check, .switch-row) + :is(label.field, .row, .check, .switch-row) { margin-top: 14px; }
+:root[data-style] .row:has(> label.field) { align-items: flex-end; }
+:root[data-style] .card > h3 + :is(p, .sub), :root[data-style] .card-head + :is(p, .sub) { margin-top: 4px; }
+:root[data-style] .card > :is(p, .sub) + :is(label.field, .row, .seg, .stack) { margin-top: 16px; }
+
+/* Disclosure: an inline toggle with a chevron, not a box in a box */
+:root[data-style] details.more { background: transparent; border: 0; border-top: 1px solid var(--stroke); border-radius: 0; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; padding: 12px 0 0; margin-top: 16px; }
+:root[data-style] details.more > summary, :root[data-style] .help-q > summary { list-style: none; display: flex; align-items: center; gap: 8px; color: var(--ink); font-weight: 600; }
+:root[data-style] :is(details.more, .help-q) > summary::-webkit-details-marker { display: none; }
+:root[data-style] :is(details.more, .help-q) > summary::before { content: ""; width: 7px; height: 7px; border-right: 1.75px solid currentColor; border-bottom: 1.75px solid currentColor; rotate: -45deg; transition: rotate .25s var(--ease-out, ease); flex: none; margin-right: 2px; }
+:root[data-style] :is(details.more, .help-q)[open] > summary::before { rotate: 45deg; }
+:root[data-style] .help-q { background: transparent; border: 0; border-bottom: 1px solid var(--stroke); border-radius: 0; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; }
+:root[data-style] .help-q > div { color: var(--ink-2); }
+
+/* Empty states: a quiet well that says what to do next */
+:root[data-style] .empty { border: 1px dashed var(--stroke); border-radius: max(4px, calc(var(--r) - 8px)); padding: 28px 20px; margin: 12px 0; }
+:root[data-style] .empty strong, :root[data-style] .empty b:first-child { display: block; font-size: 16px; margin-bottom: 4px; }
+:root[data-style="folio"] .empty, :root[data-style="brut"] .empty { border-radius: 0; }
+
+/* Lab: its section switcher is one line that scrolls, never two-line buttons */
+:root[data-style] .lb-tabs { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; justify-content: flex-start; }
+:root[data-style] .lb-tabs::-webkit-scrollbar { display: none; }
+:root[data-style] .lb-tabs button { flex: none; white-space: nowrap; }
+:root[data-style] :is(.lp-cv, .lb-iq, .lp-raw, .lp-log) { border-radius: max(4px, calc(var(--r) - 8px)); }
+
+/* Tables: numbers right-aligned and tabular, header quiet */
+:root[data-style] .tbl td.num, :root[data-style] .tbl th.num { text-align: right; font-variant-numeric: tabular-nums; }
+:root[data-style] .tbl td { padding-block: 10px; }
+
+/* Maps: the map is an instrument window, its controls are this style's controls */
+:root[data-style] .map { border-radius: var(--r-inst, var(--r)); border: var(--sw) solid var(--inst-stroke, var(--stroke)); }
+:root[data-style] .map .zoom .btn { background: var(--sf); color: var(--ink); border: 1px solid var(--stroke); box-shadow: 0 6px 16px -8px #0007; -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); }
+:root[data-style="skywave"] .map .zoom .btn, :root[data-style="lumen"] .map .zoom .btn { background: color-mix(in srgb, var(--glass) 70%, transparent); color: #fff; }
+:root[data-style] .map .attrib { border-radius: 4px; background: color-mix(in srgb, #000 55%, transparent); }
+
+/* Aurora: the bar's right-hand controls sit at the right */
+:root[data-style="aurora"] .top-right { margin-left: auto; }
+/* Brut: the ticker band belongs to the desktop poster */
+@media (max-width: 760px) { :root[data-style="brut"] .sx-marquee { display: none; } }
+/* Phone navigation labels stay readable */
+:root[data-style] .mobile-nav button { font-size: 11.5px; }
+/* links and readouts inside instruments use the instrument's signal colour; map credits stay white */
+:root[data-style] :is(.glass, .now-box, .scope) :is(a:not(.btn), .linkish, .mini-readout) { color: color-mix(in srgb, var(--sig) 55%, #fff); }
+:root[data-style] .map .attrib a { color: #fff; }
+:root[data-style="folio"] a { color: var(--ink); text-decoration-color: var(--accent); text-decoration-thickness: 2px; }
+:root[data-style="brut"] { --sel-ink: #000; --sig-ink: #000; }      /* text on the acid accent: black reads on every palette's bright accent */
+:root[data-style="brut"] :is(.glass, .now-box, .scope) { --sel-ink: #000; }
+/* card titles carry the hierarchy between the page headline and the body */
+:root[data-style] .card > h3:first-child, :root[data-style] .card-head h3, :root[data-style] .card > .row:first-child h3 { font-size: 18px; }
+:root[data-style] .scope-info { white-space: normal; overflow-wrap: anywhere; }
+/* Home hero: title and actions side by side on wide screens, stacked on phones; centred styles always stack */
+:root[data-style] .page-head.hm-hero { flex-direction: row; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; }
+:root[data-style] .hm-hero .hm-hero-main { flex: 1 1 auto; min-width: min(100%, 420px); }
+:root:is([data-style="skywave"], [data-style="aurora"]) .page-head.hm-hero { flex-direction: column; align-items: center; }
+:root:is([data-style="skywave"], [data-style="aurora"]) .hm-hero .hm-hero-main { flex: none; width: 100%; }
+@media (max-width: 760px) { :root[data-style] .page-head.hm-hero { flex-direction: column; align-items: stretch; } :root[data-style] .hm-hero .hm-hero-main { flex: none; min-width: 0; } }
+/* widgets: the label sits at the top, whatever there is to say sits at the bottom, actions after it */
+:root[data-style] .hw-empty { margin-top: auto; color: var(--ink-2); font-size: 15px; line-height: 1.45; text-align: left; padding: 0; border: 0; }
+:root[data-style] .hw-sub { font-size: 14.5px; }
+:root[data-style] .hw .hw-big + .hw-sub, :root[data-style] .hw .hw-meter + .hw-sub { margin-top: 2px; }
+:root[data-style] .hw:not(:has(.hw-big)) .hw-sub:first-of-type { margin-top: auto; }
+:root[data-style] .hw .btn { align-self: flex-start; margin-top: 12px; }
+:root[data-style] .hw-add { min-height: 120px; }
+:root[data-style="bento"] .banner { border-radius: 20px; box-shadow: none; }
+:root[data-style="bento"] .banner.warn, :root[data-style="bento"] .banner.bad { border-width: 2px; }
+:root[data-style="aurora"] .banner { box-shadow: none; }
+
+:root[data-style] a.btn:not(.primary) { color: var(--ctl-ink); text-decoration: none; }
+:root[data-style] a.btn.primary { color: var(--pri-ink); text-decoration: none; }
+/* the Lab switcher scrolls inside its column instead of widening the page */
+:root[data-style] .lb-tabs { contain: inline-size; width: 100%; max-width: 100%; }
+/* place search results: the place in bold, where it is underneath */
+/* streaming quality slider: the level's name beside the label, named stops under the track */
+:root[data-style] .q-field label b { font-weight: 600; color: var(--accent); margin-left: 6px; }
+:root[data-style] .q-field input[type=range] { width: 100%; }
+:root[data-style] .q-ticks { display: flex; justify-content: space-between; font-size: 12px; color: var(--ink-3, var(--ink-2)); margin-top: -2px; }
+:root[data-style] .q-ticks span { width: 20%; text-align: center; } :root[data-style] .q-ticks span:first-child { text-align: left; } :root[data-style] .q-ticks span:last-child { text-align: right; }
+/* the sound bar's text gets room to read: it is the one thing in the bar that says what is playing */
+@media (min-width: 761px) { :root[data-style] .soundbar .now { flex: 1 1 200px; min-width: 96px; } }
+
+/* ---------------------------------------------------------------- location picker (setup.js): one search bar, one list */
+:root[data-style] .locp > label { display: block; margin-bottom: 8px; }
+:root[data-style] .locp-now { display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 8px 14px; margin-bottom: 10px; border-radius: min(var(--r-ctl), 14px);
+  background: var(--sf-2); border: 1px solid var(--stroke); }
+:root[data-style] .locp-now > svg { width: 18px; height: 18px; flex: none; color: var(--good, var(--pri)); }
+:root[data-style] .locp-now span { display: grid; min-width: 0; }
+:root[data-style] .locp-now b { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+:root[data-style] .locp-now small { font-size: 12.5px; color: var(--ink-3, var(--ink-2)); font-variant-numeric: tabular-nums; }
+:root[data-style] .locp-now:not(.set) b { font-weight: 500; color: var(--ink-2); }
+:root[data-style] .locp-bar { display: flex; align-items: stretch; gap: 8px; }
+:root[data-style] .locp-bar > .btn { min-height: 44px; flex: none; }
+:root[data-style] .locp-in { position: relative; flex: 1; min-width: 0; display: flex; }
+:root[data-style] .locp-in > svg { position: absolute; left: 13px; top: 50%; width: 16px; height: 16px; translate: 0 -50%; color: var(--ink-3, var(--ink-2)); pointer-events: none; }
+:root[data-style] .locp-in input { width: 100%; min-height: 44px; padding-left: 38px; margin: 0; }
+:root[data-style] .locp-in input::-webkit-search-cancel-button { cursor: pointer; }
+:root[data-style] .locp-res { margin-top: 8px; border: 1px solid var(--stroke); border-radius: min(var(--r-ctl), 14px); background: var(--sf); overflow: hidden auto; max-height: 312px; overscroll-behavior: contain; }
+:root[data-style] .locp-row { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px; padding: 8px 14px; margin: 0; border: 0; border-radius: 0;
+  background: transparent; color: var(--ink); font: inherit; text-align: left; cursor: pointer; transition: background-color .12s ease; }
+:root[data-style] .locp-row + .locp-row { border-top: 1px solid var(--stroke); }
+:root[data-style] .locp-row[aria-selected="true"], :root[data-style] .locp-row:focus-visible { background: var(--ctl); outline: none; }
+:root[data-style] .locp-t { display: grid; flex: 1; min-width: 0; }
+:root[data-style] .locp-t b { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+:root[data-style] .locp-t small { font-size: 13px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+:root[data-style] .locp-cc { flex: none; font-size: 12px; font-weight: 500; color: var(--ink-3, var(--ink-2)); font-variant-numeric: tabular-nums; }
+:root[data-style] .locp-msg { padding: 14px; color: var(--ink-2); font-size: 14px; }
+:root[data-style] .locp .hint { display: block; margin-top: 8px; }
+:root[data-style] .locp-units { display: inline-flex; }
+:root[data-style] .field > label:has(+ .locp-units) { display: block; margin-bottom: 8px; }
+@media (max-width: 560px) {
+  :root[data-style] .locp-bar { flex-wrap: wrap; }
+  :root[data-style] .locp-in { flex: 1 1 100%; }
+  :root[data-style] .locp-bar > .btn { flex: 1 1 0; }
+  :root[data-style] .locp-units { display: flex; width: 100%; }
+  :root[data-style] .locp-units button { flex: 1; }
+}
+
+@media (max-width: 760px) {
+  :root[data-style] .modal { border-radius: var(--r-pop) var(--r-pop) 0 0; }
+  :root[data-style] .modal::before { border-radius: 3px; }
+}
+:root[data-style] .psheet-panel { border-radius: var(--r-pop) var(--r-pop) 0 0; }
+
+/* The sound bar always holds its controls inside its own edges: the track name, level and volume give way first, then
+   on a narrow bar Captions and Record become round icon buttons (their names stay as tooltips and accessible labels). */
+@media (min-width: 761px) {
+  :root[data-style] .soundbar { container: soundbar / inline-size; }
+  :root[data-style] .soundbar > .btn, :root[data-style] .soundbar > .tx-dot, :root[data-style] .soundbar > img { flex: none; }
+  :root[data-style] .soundbar .meter { flex: 0 1 90px; min-width: 40px; width: auto; }
+  :root[data-style] .soundbar .vol { flex: 0 1 150px; min-width: 72px; width: auto; }
+}
+@container soundbar (max-width: 940px) {
+  :root[data-style] .soundbar #sb-rec .rec-lbl, :root[data-style] .soundbar #sb-cc .cc-lbl { display: none; }
+  :root[data-style] .soundbar :is(#sb-rec, #sb-cc) { width: 44px; min-width: 44px; padding: 0; justify-content: center; }
+}
+@container soundbar (max-width: 700px) { :root[data-style] .soundbar .meter { display: none; } }
+@container soundbar (max-width: 600px) { :root[data-style] .soundbar .vol { display: none; } }
+
+/* Legibility. Folio and Brut fill their buttons with the page ink, which would vanish on a dark instrument panel, so
+   there the fill becomes the panel's own ink. The dimmed Captions button and error toasts keep full-strength text. */
+:root[data-style="folio"] :is(.glass, .now-box, .scope), :root[data-style="brut"] :is(.glass, .now-box, .scope) { --pri: var(--inst-ink); --pri-ink: var(--inst); }
+:root[data-style] #sb-cc.dim { opacity: 1; color: color-mix(in srgb, var(--inst-ink) 82%, transparent); }
+:root[data-style] .toast.bad { background: color-mix(in srgb, var(--bad) 20%, var(--chassis)); color: var(--ink); box-shadow: inset 4px 0 0 var(--bad), 0 12px 30px -16px #0008; }
+/* Aurora: text on the accent uses the palette's own readable colour; the dock is a dark bar, so it carries light ink */
+:root[data-style="aurora"] { --pri-ink: var(--on-teal, #140e02); --sel-ink: var(--on-teal, #140e02); }
+@media (min-width: 761px) {
+  :root[data-style="aurora"] .tabs { --ink: var(--inst-ink); --ink-2: color-mix(in srgb, var(--inst-ink) 76%, transparent); --ctl: color-mix(in srgb, var(--inst-ink) 10%, transparent);
+    --tab-sel-ink: color-mix(in srgb, var(--accent) 45%, #fff); background: color-mix(in srgb, var(--glass) 92%, transparent); }
+  /* Skywave: the frosted bars are solid enough that their white labels read over a pale colour field too */
+  :root[data-style="skywave"] .tabs { background: color-mix(in srgb, var(--glass) 70%, transparent); }
+}
+:root[data-style="skywave"] .soundbar { --sb: color-mix(in srgb, var(--glass) 82%, transparent); }
+:root[data-style] .soundbar .now span { color: color-mix(in srgb, var(--inst-ink) 80%, transparent); }
+/* Console's instrument colour is a gradient: give it back after the shared rule clears background images */
+:root[data-style="console"] :is(.glass, .now-box, .scope) { background: var(--inst); }
+
+/* The tab bar sits in the true centre of the screen: logo on the left and controls on the right each take an equal
+   share of what is left, so a wider control group no longer pulls the tabs off to one side. (Lumen has a sidebar,
+   Aurora a dock and Folio a masthead: their own layouts.) */
+@media (min-width: 761px) {
+  :root[data-style]:not([data-style="lumen"]):not([data-style="aurora"]):not([data-style="folio"]) .topbar {
+    display: grid; grid-template-columns: minmax(max-content, 1fr) minmax(0, auto) minmax(max-content, 1fr); align-items: center; column-gap: 16px; }
+  :root[data-style]:not([data-style="lumen"]):not([data-style="aurora"]):not([data-style="folio"]) .topbar > .brand { grid-column: 1; justify-self: start; }
+  :root[data-style]:not([data-style="lumen"]):not([data-style="aurora"]):not([data-style="folio"]) .topbar > .tabs { grid-column: 2; justify-self: center; min-width: 0; max-width: 100%; margin: 0; }
+  :root[data-style]:not([data-style="lumen"]):not([data-style="aurora"]):not([data-style="folio"]) .topbar > .top-right { grid-column: 3; justify-self: end; margin-left: 0; }
+  :root[data-style]:not([data-style="lumen"]):not([data-style="aurora"]):not([data-style="folio"]) .topbar > .m-title { display: none; }
+  /* Lumen: pages are centred in the space beside the sidebar */
+  :root[data-style="lumen"] main > .page { margin-inline: auto; }
+}
+@media (min-width: 761px) {
+  :root[data-style="lumen"] main { width: auto; max-width: none; margin: 0 0 0 236px; }
+  :root[data-style="lumen"] main > .page { max-width: 1100px; margin-inline: auto; }
+  /* both sides of the top bar as wide as the wider of the two (set by themes.js), so the middle is the true centre */
+  :root[data-style]:not([data-style="lumen"]):not([data-style="aurora"]):not([data-style="folio"]) .topbar {
+    grid-template-columns: minmax(var(--top-side, max-content), 1fr) minmax(0, auto) minmax(var(--top-side, max-content), 1fr); }
+}

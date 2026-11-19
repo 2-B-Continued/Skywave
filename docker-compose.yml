@@ -1,0 +1,28 @@
+# Skywave, Linux (and Raspberry Pi): the container talks to the dongle directly over USB.
+# On macOS or Windows use docker-compose.desktop.yml instead (Docker Desktop cannot pass USB devices through).
+services:
+  skywave:
+    build:
+      context: .
+      args:                       # optional extras; set to 1 in a .env file or your shell, then rebuild
+        WITH_RTLAMR: ${WITH_RTLAMR:-0}
+    image: skywave:local
+    container_name: skywave
+    restart: unless-stopped
+    privileged: true            # lets the container see the USB dongle
+    ports:
+      - "8073:8073"             # open http://localhost:8073 (or http://THIS-COMPUTERS-IP:8073 from another device)
+      - "8074:8074"             # the same page over https. Phones only give the compass and motion sensors to https pages
+      - "7356:7356"             # remote control for Gpredict, rig-remote and scripts (off until you turn it on in Lab > Network)
+    volumes:
+      # Directory mount (not "devices:") so it still works if you replug the dongle into another port.
+      - /dev/bus/usb:/dev/bus/usb
+      - ./data:/data            # settings, favourites, recordings, satellite data
+    environment:
+      TZ: UTC                   # optional; the app can also set your time zone itself (Settings)
+      # SIM: "1"                # set to "1" to try the app with a pretend radio (no dongle needed)
+      # AUTH_USER: "me"         # optional password for the page; set both lines
+      # AUTH_PASS: "change-me"
+      # Your location is set inside the app (Settings). Only uncomment these to force it:
+      # LAT: "51.5074"
+      # LON: "-0.1278"

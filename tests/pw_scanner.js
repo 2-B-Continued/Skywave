@@ -1,0 +1,54 @@
+// Scanner page: fixed-shape console (no jumping), channel strip, lists on desktop and as a sheet on phones, editing.
+const { chromium } = require('playwright'); const { spawn } = require('child_process'); const fs=require('fs'),os=require('os'),path=require('path');
+(async()=>{ const d=fs.mkdtempSync(path.join(os.tmpdir(),'scn-')); let bad=0; const chk=(n,ok,x)=>{ if(!ok) bad++; console.log((ok?'ok   ':'FAIL ')+n, ok?'':JSON.stringify(x)); };
+ const srv=spawn('python3',['-W','ignore','server.py'],{cwd:path.join(__dirname,'..'),env:{...process.env,SIM:'1',PORT:'18188',DATA_DIR:d,NO_NET:'1',SETUP_DONE:'1'}});
+ await new Promise(r=>setTimeout(r,4000)); const b=await chromium.launch({args:['--autoplay-policy=no-user-gesture-required']});
+ // ---- desktop
+ let p=await (await b.newContext({viewport:{width:1440,height:950}})).newPage(); const errs=[]; p.on('pageerror',e=>errs.push(e.message));
+ await p.goto('http://127.0.0.1:18188/#scanner'); await p.waitForTimeout(2500);
+ const first=await p.evaluate(()=>document.querySelector('#sc-lists .scn-li[aria-selected="true"]').dataset.id);
+ const n=await p.evaluate(()=>document.querySelectorAll('#sc-chans .scn-ch').length);
+ chk('channel cells drawn ('+n+')', n>0);
+ // a list of my own, with the simulator's busy channels added, then scanned
+ await p.click('#sc-lists .scn-li:nth-child(2)'); await p.waitForTimeout(600);
+ const second=await p.evaluate(()=>document.querySelector('#sc-lists .scn-li[aria-selected="true"]').dataset.id);
+ chk('picking a list selects it', second!==first, [first,second]);
+ await p.click('[data-act="sc-new"]'); await p.waitForTimeout(1200);
+ await p.evaluate(()=>{ document.getElementById('sc-edit').open=true; }); await p.waitForTimeout(200);
+ await p.fill('#ed-f','446.00625'); await p.fill('#ed-l','Channel 1 emergency'); await p.click('[data-act="sc-addch"]'); await p.waitForTimeout(1200);
+ await p.fill('#ed-f','446.08125'); await p.fill('#ed-l','Channel 7'); await p.click('[data-act="sc-addch"]'); await p.waitForTimeout(1200);
+ chk('channels added to my list show in the strip', await p.evaluate(()=>document.querySelectorAll('.scn-ch').length===2 && /446\.00/.test(document.getElementById('sc-chans').textContent)));
+ const h0=await p.evaluate(()=>document.getElementById('sc-now').offsetHeight);
+ await p.click('#sc-go'); await p.waitForTimeout(1500);
+ const h1=await p.evaluate(()=>document.getElementById('sc-now').offsetHeight);
+ chk('console same height idle and scanning ('+h0+' / '+h1+')', h0===h1, [h0,h1]);
+ const r=await p.evaluate(()=>new Promise(res=>{ const H=new Set(), C=new Set(); let live=null; const t0=performance.now();
+   (function f(){ H.add(document.documentElement.scrollHeight); C.add(document.getElementById('sc-now').offsetHeight);
+     const m=document.getElementById('sc-now').dataset.mode; if(m==='live'&&!live) live={cur:document.querySelectorAll('.scn-ch.cur').length, title:document.getElementById('sc-title').textContent, ign:!document.getElementById('sc-ign').disabled};
+     if(performance.now()-t0<35000 && !(live && performance.now()-t0>3000)) setTimeout(f,100); else res({H:[...H],C:[...C],live}); })(); }));
+ chk('page height never changes while scanning', r.H.length===1, r.H);
+ chk('console height never changes, even when it stops on a channel', r.C.length===1, r.C);
+ chk('stops on a channel, and that channel is lit ("'+(r.live&&r.live.title)+'")', r.live && r.live.cur===1 && r.live.ign, r.live);
+ await p.click('#sc-stop'); await p.waitForTimeout(800);
+ chk('emergency channel is marked', await p.evaluate(()=>document.querySelectorAll('.scn-ch.em').length===1));
+ await p.evaluate(()=>window.scrollTo(0,600)); await p.waitForTimeout(400);
+ const rail=await p.evaluate(()=>{ const r=document.querySelector('.scn-rail').getBoundingClientRect(); const sb=document.getElementById('soundbar').getBoundingClientRect(); return { bottom:r.bottom, sb:sb.top }; });
+ chk('list rail, once it sticks, ends above the sound bar', rail.bottom<=rail.sb+1, rail);
+ chk('no page errors (desktop)', !errs.length, errs.slice(0,3));
+ // ---- phone
+ p=await (await b.newContext({viewport:{width:390,height:844},hasTouch:true})).newPage(); const e2=[]; p.on('pageerror',e=>e2.push(e.message));
+ await p.goto('http://127.0.0.1:18188/#scanner'); await p.waitForTimeout(2500);
+ chk('rail hidden on a phone, Change list shown', await p.evaluate(()=>getComputedStyle(document.querySelector('.scn-rail')).display==='none' && document.querySelector('.scn-change').offsetWidth>0));
+ const ph0=await p.evaluate(()=>document.getElementById('sc-now').offsetHeight);
+ await p.click('#sc-go'); await p.waitForTimeout(1500);
+ const ph1=await p.evaluate(()=>document.getElementById('sc-now').offsetHeight);
+ chk('phone console same height idle and scanning ('+ph0+' / '+ph1+')', ph0===ph1, [ph0,ph1]);
+ const fit=await p.evaluate(()=>[...document.querySelectorAll('.scn-ctl .btn:not([hidden])')].every(b=>b.scrollWidth<=b.clientWidth+1));
+ chk('control labels fit their buttons', fit);
+ await p.click('.scn-change'); await p.waitForTimeout(700);
+ const opts=await p.evaluate(()=>document.querySelectorAll('.scn-lists-sheet .scn-li').length);
+ chk('Change list opens the lists ('+opts+')', opts>2, opts);
+ await p.click('.scn-lists-sheet .scn-li:nth-child(3)'); await p.waitForTimeout(900);
+ chk('choosing in the sheet closes it and stops the old scan', await p.evaluate(()=>!document.querySelector('.scn-lists-sheet') && document.getElementById('sc-now').dataset.mode==='idle'));
+ chk('no page errors (phone)', !e2.length, e2.slice(0,3));
+ await b.close(); srv.kill(); console.log(bad?'SOME FAILED':'ALL PASS'); process.exit(bad?1:0); })();

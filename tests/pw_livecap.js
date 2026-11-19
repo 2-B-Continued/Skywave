@@ -1,0 +1,21 @@
+const { chromium } = require('playwright'); const { spawn } = require('child_process'); const fs = require('fs'), os = require('os'), path = require('path');
+(async () => {
+  const d = fs.mkdtempSync(path.join(os.tmpdir(), 'lc-'));
+  const srv = spawn('python3', ['-W', 'ignore', 'server.py'], { cwd: path.join(__dirname, '..'), env: { ...process.env, SIM: '1', PORT: '18114', DATA_DIR: d, NO_NET: '1', SETUP_DONE: '1' } });
+  await new Promise(r => setTimeout(r, 4000));
+  let ok = true; const chk = (n, c, x) => { console.log(c ? 'ok  ' : 'FAIL', n, x === undefined ? '' : JSON.stringify(x)); if (!c) ok = false; };
+  const b = await chromium.launch(); const p = await b.newPage({ viewport: { width: 1000, height: 800 } }); const errs = []; p.on('pageerror', e => errs.push(e.message));
+  await p.goto('http://127.0.0.1:18114/#radio'); await p.waitForTimeout(2500);
+  await p.evaluate(() => { RS.st.captions = { on: true, allowed: true, available: true }; document.getElementById('capstrip').hidden = false; });
+  const send = m => p.evaluate(m => RS.fire('caption', Object.assign({ t: Date.now() / 1000, f: 446006250, label: 'PMR446 channel 1' }, m)), m);
+  await send({ id: 7, partial: true, text: 'cleared to' }); await send({ id: 7, partial: true, text: 'cleared to land runway' });
+  let n = await p.evaluate(() => [RS.captionLog.length, document.querySelectorAll('#cap-lines > div').length, document.querySelectorAll('#cap-lines .live').length]);
+  chk('growing live text stays one line', n[0] === 1 && n[1] === 1 && n[2] === 1, n);
+  await send({ id: 7, partial: false, text: 'Cleared to land runway three four.' });
+  n = await p.evaluate(() => [RS.captionLog.length, document.querySelectorAll('#cap-lines .live').length, document.querySelector('#cap-lines span').textContent]);
+  chk('final replaces it in place, no longer live', n[0] === 1 && n[1] === 0 && /three four/.test(n[2]), n);
+  await send({ id: 8, partial: true, text: 'thanks' }); await p.evaluate(() => RS.fire('caption_drop', { id: 8 }));
+  chk('a live line for nothing is removed', await p.evaluate(() => RS.captionLog.length) === 1);
+  chk('no page errors', errs.length === 0, errs);
+  await b.close(); srv.kill(); console.log(ok ? 'PASS' : 'FAIL'); process.exit(ok ? 0 : 1);
+})();
