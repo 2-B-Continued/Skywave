@@ -4,6 +4,16 @@ A self-hosted web app for RTL-SDR USB radio dongles: FM and AM radio, aircraft (
 satellites, weather balloons, sensors, pagers and aircraft messages, scanners and a receiver lab, in one page that
 works on desktop and phone, in 96 languages. Settings follow the country you choose.
 
+<img width="1600" height="1000" alt="planes" src="https://github.com/user-attachments/assets/e70c4708-8f44-4848-b41b-65a457912ec3" />
+<img width="1600" height="1000" alt="radio" src="https://github.com/user-attachments/assets/c1aeefcb-a8d1-4f8b-8640-7a81ee6097a3" />
+<img width="1600" height="1000" alt="lab" src="https://github.com/user-attachments/assets/b7e92ffd-b1b7-457d-8823-9c12f395395c" />
+<img width="1600" height="1000" alt="home" src="https://github.com/user-attachments/assets/8548a25b-221f-4b6d-b9f7-c3f8ad4c5885" />
+<img width="1680" height="892" alt="phone" src="https://github.com/user-attachments/assets/75edce61-f02b-4952-9ba8-598584b7b5fa" />
+<img width="1800" height="1143" alt="styles" src="https://github.com/user-attachments/assets/4a25ae4e-4cb3-4b01-acbe-a16ed6d83599" />
+<img width="1600" height="1000" alt="space" src="https://github.com/user-attachments/assets/dc8f11a1-5ddb-4667-9e54-74741143e310" />
+<img width="1600" height="1000" alt="sensors" src="https://github.com/user-attachments/assets/fe566fa9-682c-45ec-9392-79495c587b3c" />
+<img width="1600" height="1000" alt="scanner" src="https://github.com/user-attachments/assets/4ae03634-99e1-48c4-b599-69571118526b" />
+
 ## Quick start
 
 You need Docker, an RTL-SDR dongle (an RTL-SDR Blog V4 is recommended) and an antenna.
