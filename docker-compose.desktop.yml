@@ -1,0 +1,33 @@
+# Skywave, macOS and Windows (Docker Desktop).
+# Docker Desktop runs containers inside a small virtual machine, which cannot see USB devices. So the dongle is
+# served by a tiny program running on your computer itself (rtl_tcp), and the container connects to that.
+#
+#   1. Install the RTL-SDR Blog drivers on your computer (Windows: also run Zadig once; macOS: brew install librtlsdr).
+#   2. Start the dongle server in a terminal and leave it running:   rtl_tcp -a 127.0.0.1
+#   3. docker compose -f docker-compose.desktop.yml up -d --build
+#   4. Open http://localhost:8073
+#
+# No dongle? Set SIM to "1" below and the app runs against a pretend radio.
+services:
+  skywave:
+    build:
+      context: .
+      args:                       # optional extras; set to 1 in a .env file or your shell, then rebuild
+        WITH_RTLAMR: ${WITH_RTLAMR:-0}
+    image: skywave:local
+    container_name: skywave
+    restart: unless-stopped
+    ports:
+      - "8073:8073"
+      - "8074:8074"             # the same page over https. Phones only give the compass and motion sensors to https pages
+      - "7356:7356"             # remote control for Gpredict, rig-remote and scripts (off until you turn it on in Lab > Network)
+    extra_hosts:
+      - "host.docker.internal:host-gateway"     # makes the name work on Linux too
+    volumes:
+      - ./data:/data
+    environment:
+      RTL_TCP: "host.docker.internal:1234"      # where rtl_tcp is running
+      SIM: "0"
+      TZ: UTC
+      # AUTH_USER: "me"
+      # AUTH_PASS: "change-me"

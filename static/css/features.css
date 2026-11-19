@@ -1,0 +1,77 @@
+/* Skywave - layout for the Balloons and Messages pages, the signal helpers on Radio, the plane replay and the Home
+   Assistant card. Colours come from each style's own variables, so every style keeps its look. */
+
+/* ---- small shared pieces */
+.linkish { background: none; border: 0; padding: 0; color: var(--teal); font: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; min-height: 0; }
+.linkish:hover { color: var(--ink); }
+.tips { margin: 8px 0 0; padding-left: 18px; line-height: 1.5; }
+.tips li + li { margin-top: 6px; }
+.good-t { color: var(--good, #1f9d55); font-weight: 700; }
+.bad-t { color: var(--bad, #d6452f); font-weight: 700; }
+.chip-x { background: none; border: 0; padding: 0 0 0 4px; margin: 0; min-height: 0; font-size: 16px; line-height: 1; color: inherit; opacity: .6; cursor: pointer; }
+.chip-x:hover { opacity: 1; }
+.mil-badge { background: #6b7a3a; color: #fff; animation: none; }
+
+/* ---- Messages */
+.ms-tools { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: flex-end; min-width: 0; }
+.ms-tools .ms-search { width: 200px !important; max-width: 100%; flex: 0 1 200px; min-width: 0; }
+.ms-tools .check { margin: 0; white-space: nowrap; }
+.ms-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; max-height: 70vh; overflow: auto; overscroll-behavior: contain; }
+.ms-item { border: 1px solid var(--line); border-radius: var(--r-sm, 8px); padding: 10px 12px; background: color-mix(in srgb, var(--panel) 85%, transparent); min-width: 0; }
+.ms-item.hit { border-color: var(--amber); box-shadow: inset 3px 0 0 var(--amber); }
+.ms-item.fresh { animation: ms-in .5s ease-out; }
+@keyframes ms-in { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+.ms-head { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; min-width: 0; }
+.ms-dir { font-weight: 800; color: var(--teal); width: 1em; text-align: center; }
+.ms-what { color: var(--ink-2); font-size: 13px; }
+.ms-time { margin-left: auto; font-variant-numeric: tabular-nums; color: var(--ink-2); font-size: 13px; }
+.ms-text { margin: 6px 0 4px; white-space: pre-wrap; overflow-wrap: anywhere; font: 13px/1.45 "Geist Mono", "B612 Mono", ui-monospace, monospace; color: var(--ink); background: none; padding: 0; }
+@media (prefers-reduced-motion: reduce) { .ms-item.fresh { animation: none; } }
+
+/* ---- Radio: what is this, and the overload strip */
+.rd-sig { margin-top: 8px; font-size: 14px; line-height: 1.4; min-height: 1.4em; }
+.rd-sig .rd-sig-k { opacity: .75; }
+.glass .rd-sig, .glass .rd-sig b { color: var(--glass-ink, #e6eef2); }
+.glass .rd-sig .muted { color: inherit; opacity: .75; }
+.glass .rd-sig .linkish { color: var(--amber); }
+.rd-over { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; padding: 10px 14px;
+  border: 1px solid var(--amber); border-radius: var(--r-sm, 8px); background: color-mix(in srgb, var(--amber) 14%, var(--panel)); color: var(--ink); }
+.rd-over b { display: block; }
+
+/* ---- Planes replay */
+.replay { padding: 10px 12px; margin-top: 10px; }
+.replay-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.replay-ctl { display: flex; align-items: center; gap: 10px; flex: 1 1 260px; min-width: 0; flex-wrap: wrap; }
+.replay-ctl input[type=range] { flex: 1 1 140px; min-width: 0; }
+.replaying #pl-map { outline: 2px solid var(--amber); outline-offset: -2px; }
+
+/* ---- Space pass hint */
+.pass-tip { margin: 2px 0; color: var(--ink); opacity: .85; }
+
+/* ---- Home Assistant */
+.mq-grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 0 12px; margin: 8px 0; }
+@media (max-width: 520px) { .mq-grid { grid-template-columns: minmax(0, 1fr); } }
+.se-mqtt { margin: -4px 0 12px; }
+
+/* ---- Lab: instruments */
+.lp-cv { display: block; width: 100%; height: 220px; margin: 10px 0; border-radius: var(--r-sm, 8px); background: #071318; border: 1px solid var(--line); }
+.lp-cv.short { height: 120px; }
+.lp-cv.tall { height: 300px; }
+.lp-cv.square { height: min(420px, 80vw); }
+.lp-counter { font: 600 clamp(26px, 6vw, 44px)/1.1 "Geist Mono", "B612 Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; letter-spacing: .02em; margin: 6px 0 10px; color: var(--ink); overflow-wrap: anywhere; }
+.lp-counter span { opacity: .65; }
+.lp-counter small { font-size: .4em; opacity: .6; }
+.lp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(58px, 1fr)); gap: 4px; margin-top: 8px; }
+.lp-grid span { font: 12px/1 "Geist Mono", ui-monospace, monospace; text-align: center; padding: 6px 2px; border: 1px solid var(--line); border-radius: 4px; opacity: .7; }
+.lp-grid span.on { background: var(--amber); color: #111; opacity: 1; border-color: var(--amber); font-weight: 700; }
+.lp-bar { display: inline-block; width: 90px; height: 8px; border-radius: 4px; background: color-mix(in srgb, var(--ink) 15%, transparent); overflow: hidden; vertical-align: middle; }
+.lp-bar i { display: block; height: 100%; background: var(--teal); }
+.lp-log { max-height: 360px; overflow: auto; margin-top: 8px; font-size: 13px; }
+.lp-ll { padding: 4px 0; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
+.lp-ll.warn { color: var(--amber); }
+.lp-ll.error { color: var(--bad, #d6452f); }
+.lp-raw { width: 100%; min-height: 320px; font: 12px/1.45 "Geist Mono", ui-monospace, monospace; padding: 10px; border: 1px solid var(--line); border-radius: var(--r-sm, 8px); background: color-mix(in srgb, var(--panel) 80%, #000); color: var(--ink); white-space: pre; overflow: auto; }
+.lp-raw.ro { min-height: 0; max-height: 360px; }
+.lp-api div, .kbd { margin: 3px 0; }
+.kbd { display: inline-block; font: 12px "Geist Mono", ui-monospace, monospace; padding: 2px 6px; border: 1px solid var(--line); border-radius: 4px; }
+#lp-smode { flex-wrap: wrap; }

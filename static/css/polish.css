@@ -1,0 +1,98 @@
+/* polish.css - details that apply across every style. Loaded last.
+   Cover art that melts into the card, the radio controls in three tidy groups, zoom on the dial itself, a frequency editor
+   that stays in its own space, solid bars on phones, nothing wider than the screen, and messages you can read in full. */
+
+
+/* ---------- radio controls: tuning together, actions together. Zoom lives on the dial */
+.tune-controls:has(> .tc-tune) { display: flex; flex-direction: column; align-items: stretch; gap: 10px; }
+.tc-tune { display: grid; grid-template-columns: minmax(0, 1fr) auto auto minmax(0, 1fr); gap: 8px; align-items: center; }
+.tc-acts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; align-items: center; }
+.tc-tune .btn, .tc-acts .btn { justify-content: center; min-width: 0; white-space: nowrap; grid-column: auto !important; }
+.tc-acts .btn svg { flex: none; }
+.tc-s { display: none; }
+@media (min-width: 1000px) {
+  .tune-controls:has(> .tc-tune) { flex-direction: row; justify-content: space-between; align-items: center; gap: 16px; }
+  .tc-tune { grid-template-columns: auto auto auto auto; }
+  .tc-acts { display: flex; gap: 8px; }
+}
+@media (max-width: 520px) { .tc-l { display: none; } .tc-s { display: inline; } }
+:root[data-style="brut"] .tc-tune, :root[data-style="brut"] .tc-acts { gap: 0; }
+:root[data-style="brut"] :is(.tc-tune, .tc-acts) > .btn + .btn { margin-left: calc(var(--bw) * -1); }
+:root[data-style="brut"] .tune-controls:has(> .tc-tune) { gap: 12px; }
+
+.dial-box { position: relative; }
+.dial-zoom { position: absolute; top: 6px; right: 6px; z-index: 2; display: flex; gap: 4px; opacity: .9; }
+.dial-zoom .btn { --h: 30px; width: 34px !important; height: 30px !important; min-height: 0 !important; min-width: 0 !important; padding: 0 !important; justify-content: center; }
+.dial-zoom .btn svg { width: 15px; height: 15px; margin: 0; }
+:root[data-style="aurora"] .dial-zoom .btn { --sl: 7px; }
+
+/* ---------- the frequency editor keeps to its own line, and the band buttons above always win the tap */
+.band-chips { position: relative; z-index: 3; }
+.readout { margin-top: 4px; }
+.freq.editable { display: inline-block; max-width: 100%; }
+.freq .freq-edit { display: inline-block; vertical-align: top; height: 1em; line-height: 1; padding: 0; box-sizing: content-box; max-width: 100%; }
+
+/* ---------- long messages: a banner that is cut short opens to its full text when tapped (core.js adds .clamped) */
+.banners .banner.clamped { cursor: pointer; position: relative; padding-bottom: 26px !important; }
+.banners .banner.clamped .txt::before { content: "Show all"; position: absolute; right: 14px; bottom: 7px; font-size: 12px; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; opacity: .85; }
+.banners .banner.open > div, .banners .banner.open .txt { -webkit-line-clamp: unset !important; display: block !important; overflow: visible !important; }
+.banners .banner .txt { min-width: 0; overflow-wrap: break-word; }
+.toast { overflow-wrap: break-word; }
+.toast.long { cursor: pointer; }
+.msg-full { white-space: pre-wrap; overflow-wrap: break-word; font-size: 15px; line-height: 1.5; margin: 6px 0 14px; user-select: text; }
+
+/* ---------- nothing may be wider than the screen */
+html, body { max-width: 100%; overflow-x: clip; }
+main, .page, .card, .glass, .banner, .modal { min-width: 0; max-width: 100%; }
+.page img, .page canvas, .page video, .page svg:not([width]) { max-width: 100%; }
+:is(.card, .glass, .banner, .modal, .tile, .hw) :is(p, .sub, .txt, .small, .muted, .empty) { overflow-wrap: break-word; }
+.row, .chip-row { min-width: 0; flex-wrap: wrap; }
+.tbl { max-width: 100%; }
+.table-wrap, .tbl-wrap { max-width: 100%; overflow-x: auto; }
+
+/* ---------- phones: the top bar stays put with a solid background (content never shows through it), the player is solid */
+@media (max-width: 860px) {
+  .topbar { position: sticky !important; top: 0 !important; z-index: 50 !important; transform: none !important; }
+  :root .topbar { background-color: var(--chassis) !important; background-image: none !important; }
+  .soundbar { isolation: isolate; }
+  .soundbar::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; background: var(--sb, var(--inst, var(--glass))); pointer-events: none; }
+  .mobile-nav { isolation: isolate; }
+  .mobile-nav::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; background: var(--sb, var(--inst, var(--glass))); pointer-events: none; }
+  /* sideways rows of band buttons scroll, with a soft edge so it is clear there is more */
+  .band-chips { -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent); padding-right: 28px !important; }
+  .tune-controls .btn { padding-left: 6px; padding-right: 6px; }
+}
+@media (max-width: 520px) {
+  .tc-tune .btn.step-btn { width: 44px !important; min-width: 44px !important; padding: 0 !important; }
+  .tc-tune .btn:not(.step-btn) { gap: 6px; font-size: min(1em, 15px); }
+}
+
+/* Morse switch in the signal row */
+.rd-q .rd-morse { margin-left: auto; flex: none; }
+.rd-q .rd-morse[aria-pressed="true"] { font-weight: 700; }
+
+/* Buttons never push past the screen: a long label wraps inside its button instead of widening the row. */
+.page .row > .btn, .page .btn { max-width: 100%; min-width: 0; }
+.page .row > .btn { white-space: normal; overflow-wrap: break-word; text-align: center; line-height: 1.2; }
+.page .row { flex-wrap: wrap; min-width: 0; }
+@media (max-width: 520px) { .tc-tune .btn { padding-left: 10px; padding-right: 10px; gap: 6px; } }
+
+/* Folio's section index is a row of numbered words; with sixteen sections it wraps onto a second line like a printed
+   contents list instead of running off the page. */
+@media (min-width: 861px) { :root[data-style="folio"] .tabs { flex-wrap: wrap; row-gap: 0; } }
+
+/* Tabs that don't fit drop their words (see fitTabs in core.js); the open tab always keeps its name. */
+.tabs.fit1:not(.noicons) .tab.sec:not([aria-selected="true"]) .t, .tabs.fit2:not(.noicons) .tab:not([aria-selected="true"]) .t { display: none !important; }
+.tabs.fit1:not(.noicons) .tab.sec:not([aria-selected="true"]), .tabs.fit2:not(.noicons) .tab:not([aria-selected="true"]) { padding-left: 10px; padding-right: 10px; }
+.tabs.fit3 { gap: 2px !important; }
+.tabs.fit3 .tab:not([aria-selected="true"]) { padding-left: 6px !important; padding-right: 6px !important; min-width: 0 !important; }
+.tabs.fit3 .tab-sep { margin-left: 2px !important; margin-right: 2px !important; }
+.tabs.noicons .tab.sec .t, .tabs.noicons .tab .t { display: inline !important; }
+.tabs.noicons.fit1 .tab:not([aria-selected="true"]) { padding-left: 9px !important; padding-right: 9px !important; }
+.tabs.noicons.fit2 .tab { font-size: .88em !important; letter-spacing: .02em !important; }
+.tabs.noicons.fit3 .tab { font-size: .8em !important; padding-left: 6px !important; padding-right: 6px !important; }
+/* Word-only tabs never squash their words: if they still don't fit, they wrap onto a second row of blocks. */
+.tabs.noicons .tab { flex-shrink: 0; white-space: nowrap; }
+.tabs.noicons.fit3 { flex-wrap: wrap; overflow: visible !important; }
+@media (min-width: 761px) { :root[data-style="brut"] .topbar:has(.tabs.fit3) { height: auto; } }
+@media (min-width: 761px) { :root[data-style="brut"] .tabs.fit3 .tab { min-height: 40px; border-bottom: var(--bd); } }

@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Skywave">
+<meta name="format-detection" content="telephone=no">
+<title>Skywave</title>
+<meta name="description" content="Listen to radio, scan, track planes and satellites with an RTL-SDR dongle.">
+<link rel="icon" type="image/png" sizes="32x32" href="/img/skywave-32.png?v=5">
+<link rel="icon" type="image/png" sizes="192x192" href="/img/skywave-192.png?v=5">
+<link rel="shortcut icon" href="/favicon.ico?v=5">
+<link rel="apple-touch-icon" sizes="180x180" href="/img/skywave-touch.png?v=5">
+<link rel="apple-touch-icon" sizes="1024x1024" href="/img/skywave-touch-1024.png?v=5">
+<link rel="manifest" href="/manifest.webmanifest?v=5">
+<link rel="stylesheet" href="/css/app.css">
+<link rel="stylesheet" href="/css/ui.css">
+<link rel="stylesheet" href="/css/mobile.css">
+<link rel="stylesheet" href="/vendor/lenis.css">
+<link rel="stylesheet" href="/css/motion.css">
+<link rel="stylesheet" href="/css/features.css">
+<link rel="stylesheet" href="/css/polish.css">
+<link rel="stylesheet" href="/css/craft.css">
+<link rel="stylesheet" href="/css/styles.css">
+<link rel="stylesheet" href="/css/kinetic.css">
+  <link rel="stylesheet" href="/css/scanner.css">
+  <link rel="stylesheet" href="/css/sensors.css">
+  <link rel="stylesheet" href="/css/planes.css">
+  <link rel="stylesheet" href="/css/radio.css">
+  <link rel="stylesheet" href="/css/space.css">
+  <link rel="stylesheet" href="/css/home.css">
+  <link rel="stylesheet" href="/css/feel.css">
+<script>try{var t=localStorage.getItem('rs.theme');if(t)document.documentElement.setAttribute('data-theme',JSON.parse(t));document.documentElement.setAttribute('data-style',(function(v){return ['classic','lumen','bento','folio','terminal','brut','ticket','aurora','console'].indexOf(v)>=0?v:'skywave'})(JSON.parse(localStorage.getItem('rs.style')||'"skywave"')));if(JSON.parse(localStorage.getItem('rs.adv')))document.documentElement.classList.add('adv0')}catch(e){}</script>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+<symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+<symbol id="i-radio" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="12" rx="3" fill="none" stroke="currentColor" stroke-width="1.75"/><path d="M7 8l10-5M8 14h5M16 14h.01M16 17h.01" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></symbol>
+<symbol id="i-scan" viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 1 3 6.2M12 12l5-4" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><path d="M4 18v-4h4" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+<symbol id="i-plane" viewBox="0 0 24 24"><path d="M12 2c1 0 1.6 1 1.6 2.4v5.2l7.4 4.4v2l-7.4-2.2v4.2l2 1.6V22l-3.6-1-3.6 1v-1.4l2-1.6v-4.2L3 16v-2l7.4-4.4V4.4C10.4 3 11 2 12 2z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"/></symbol>
+<symbol id="i-space" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><g transform="rotate(45 12 12)"><rect x="9.5" y="8.5" width="5" height="7" rx="1.2"/><rect x="1.5" y="9" width="6" height="6" rx=".8"/><rect x="16.5" y="9" width="6" height="6" rx=".8"/><path d="M7.5 12h2M14.5 12h2"/></g><path d="M3.5 15a5.5 5.5 0 0 0 5.5 5.5"/></g></symbol>
+<symbol id="i-ham" viewBox="0 0 24 24"><path d="M12 21V8M12 8l-5 13M12 8l5 13M8 14h8M7 5a7 7 0 0 1 10 0M9.5 7.5a3.6 3.6 0 0 1 5 0" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+<symbol id="i-sensor" viewBox="0 0 24 24"><path d="M10 14V5a2 2 0 0 1 4 0v9a4 4 0 1 1-4 0z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"/><circle cx="12" cy="16.5" r="1.4" fill="currentColor"/></symbol>
+<symbol id="i-explore" viewBox="0 0 24 24"><path d="M3 15l3-5 3 8 3-12 3 9 2-4 4 4" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+<symbol id="i-tape" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3" fill="none" stroke="currentColor" stroke-width="1.75"/><circle cx="8.5" cy="12" r="2.2" fill="none" stroke="currentColor" stroke-width="1.75"/><circle cx="15.5" cy="12" r="2.2" fill="none" stroke="currentColor" stroke-width="1.75"/></symbol>
+<symbol id="i-ship" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 15l2 4h14l2-4z"/><path d="M12 15V4M12 5l6 8h-6M12 8l-4 5h4"/></g></symbol>
+<symbol id="i-compass" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></g></symbol>
+<symbol id="i-lab" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M4 7h9M17 7h3M4 12h3M11 12h9M4 17h11M19 17h1"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="17" r="2"/></g></symbol>
+<symbol id="i-gear" viewBox="0 0 24 24"><path d="M19.21 9.61 L22.01 10.05 L22.01 13.95 L19.21 14.39 L18.79 15.41 L20.46 17.70 L17.70 20.46 L15.41 18.79 L14.39 19.21 L13.95 22.01 L10.05 22.01 L9.61 19.21 L8.59 18.79 L6.30 20.46 L3.54 17.70 L5.21 15.41 L4.79 14.39 L1.99 13.95 L1.99 10.05 L4.79 9.61 L5.21 8.59 L3.54 6.30 L6.30 3.54 L8.59 5.21 L9.61 4.79 L10.05 1.99 L13.95 1.99 L14.39 4.79 L15.41 5.21 L17.70 3.54 L20.46 6.30 L18.79 8.59Z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"/><circle cx="12" cy="12" r="3.2" fill="none" stroke="currentColor" stroke-width="1.75"/></symbol>
+<symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.8" fill="currentColor"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><circle cx="19" cy="12" r="1.8" fill="currentColor"/></symbol>
+<symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5z" fill="currentColor"/></symbol>
+<symbol id="i-stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor"/></symbol>
+<symbol id="i-sound" viewBox="0 0 24 24"><path d="M4 9.5v5h4l5 4v-13l-5 4zM16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+<symbol id="i-mute" viewBox="0 0 24 24"><path d="M4 9.5v5h4l5 4v-13l-5 4zM17 9.5l5 5M22 9.5l-5 5" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+<symbol id="i-rec" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7" fill="currentColor"/></symbol>
+<symbol id="i-left" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+<symbol id="i-right" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+<symbol id="i-seekl" viewBox="0 0 24 24"><path d="M6 5v14M19 5l-9 7 9 7z" fill="currentColor" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"/></symbol>
+<symbol id="i-seekr" viewBox="0 0 24 24"><path d="M18 5v14M5 5l9 7-9 7z" fill="currentColor" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"/></symbol>
+<symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="1.75"/><path d="M16 16l5 5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></symbol>
+<symbol id="i-pause" viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14" rx="1" fill="currentColor"/><rect x="14" y="5" width="4" height="14" rx="1" fill="currentColor"/></symbol>
+<symbol id="i-skip" viewBox="0 0 24 24"><path d="M5 5l9 7-9 7zM17 5v14" fill="currentColor" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"/></symbol>
+<symbol id="i-ban" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="1.75"/><path d="M6.5 6.5l11 11" stroke="currentColor" stroke-width="1.75"/></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></symbol>
+<symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></symbol>
+<symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.75"/><path d="M12 7.5V12l3 2" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+<symbol id="i-balloon" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 1 6 6c0 3.6-3.2 6.5-6 7.5C9.2 15.5 6 12.6 6 9a6 6 0 0 1 6-6z"/><path d="M12 16.5v2.5M10.5 19h3l-1.5 2.5z"/></g></symbol>
+<symbol id="i-msg" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/></g></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+<symbol id="i-down" viewBox="0 0 24 24"><path d="M6 9.5l6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+<symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.3 5.9.9-4.25 4.1 1 5.8L12 16.9l-5.25 2.7 1-5.8L3.5 9.7l5.9-.9z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"/></symbol>
+</defs>
+</svg>
+
+<div class="app">
+  <header class="topbar">
+    <a class="brand" href="#home" aria-label="Skywave home">
+      <img src="/img/skywave-logo-96.png?v=5" srcset="/img/skywave-logo-96.png?v=5 1x, /img/skywave-logo-192.png?v=5 2x" width="30" height="30" alt="">
+      <span>Skywave</span>
+    </a>
+    <span class="m-title" id="m-title" aria-hidden="true"></span>
+    <nav class="tabs" id="tabs" role="tablist" aria-label="Sections"></nav>
+    <div class="top-right">
+      <span class="pill" id="conn-pill" title="Connection to your radio"><i class="dot"></i><span class="lbl" id="conn-lbl">Connecting</span></span>
+      <div class="mode-switch" role="group" aria-label="How much detail to show">
+        <button type="button" id="mode-easy" aria-pressed="true" title="Simple controls, plain English">Easy</button>
+        <button type="button" id="mode-adv" aria-pressed="false" title="Show all the extra controls">Advanced</button>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+    <div class="banners" id="banners" aria-live="polite"></div>
+    <section class="page" id="p-home" role="tabpanel"></section>
+    <section class="page" id="p-radio" role="tabpanel"></section>
+    <section class="page" id="p-scanner" role="tabpanel"></section>
+    <section class="page" id="p-planes" role="tabpanel"></section>
+    <section class="page" id="p-space" role="tabpanel"></section>
+    <section class="page" id="p-ham" role="tabpanel"></section>
+    <section class="page" id="p-sensors" role="tabpanel"></section>
+    <section class="page" id="p-ships" role="tabpanel"></section>
+    <section class="page" id="p-sondes" role="tabpanel"></section>
+    <section class="page" id="p-messages" role="tabpanel"></section>
+    <section class="page" id="p-explore" role="tabpanel"></section>
+    <section class="page" id="p-library" role="tabpanel"></section>
+    <section class="page" id="p-lab" role="tabpanel"></section>
+    <section class="page" id="p-settings" role="tabpanel"></section>
+  </main>
+
+  <div class="soundbar" id="soundbar">
+    <button class="btn primary big" id="sb-play" type="button"><svg><use href="#i-sound"/></svg><span>Start sound</span></button>
+    <img id="sb-art" class="art-bar hide" alt="" width="44" height="44">
+    <div class="now"><b id="sb-title">Ready</b><span id="sb-sub">Sound is off.</span></div>
+    <span class="tx-dot" id="sb-dot" title="Lights up when a signal is being heard"></span>
+    <div class="meter" title="Sound level"><i id="sb-meter"></i></div>
+    <input class="vol" id="sb-vol" type="range" min="0" max="1" step="0.01" value="0.8" aria-label="Volume">
+    <button class="btn" id="sb-rec" type="button" title="Record what you are hearing to a file"><svg><use href="#i-rec"/></svg><span class="rec-lbl">Record</span></button>
+  </div>
+  <nav class="mobile-nav" id="mnav" role="tablist" aria-label="Sections"></nav>
+</div>
+<div class="toasts" id="toasts" aria-live="polite"></div>
+<div id="modal-root"></div>
+
+<script src="/js/core.js"></script>
+<script src="/js/sound.js"></script>
+<script src="/js/audio.js"></script>
+<script src="/js/ships.js"></script>
+<script src="/js/sondes.js"></script>
+<script src="/js/messages.js"></script>
+<script src="/js/i18n.js"></script>
+<script src="/js/scale.js"></script>
+<script src="/js/setup.js"></script>
+<script src="/js/radio.js"></script>
+<script src="/js/dialstyles.js"></script>
+<script src="/js/pages.js"></script>
+<script src="/js/planes.js"></script>
+<script src="/js/scanner.js"></script>
+<script src="/js/pages2.js"></script>
+<script src="/js/space.js"></script>
+<script src="/js/sensors.js"></script>
+<script src="/js/antenna.js"></script>
+<script src="/js/align.js"></script>
+<script src="/js/extras.js"></script>
+<script src="/js/signals.js"></script>
+<script src="/js/integrations.js"></script>
+<script src="/js/captions.js"></script>
+<script src="/js/art.js"></script>
+<script src="/js/air.js"></script>
+<script src="/js/home.js"></script>
+<script src="/js/lab.js"></script>
+<script src="/js/labpro.js"></script>
+<script src="/js/themes.js"></script>
+<script src="/js/titlecase.js"></script>
+<script src="/js/fx.js"></script>
+<script src="/js/mobile.js"></script>
+<script src="/vendor/gsap.min.js"></script>
+<script src="/vendor/ScrollTrigger.min.js"></script>
+<script src="/vendor/SplitText.min.js"></script>
+<script src="/vendor/lenis.min.js"></script>
+<script src="/js/motion.js"></script>
+<script src="/js/craft.js"></script>
+<script src="/js/kinetic.js"></script>
+<script src="/js/navglide.js"></script>
+<script src="/js/sheet.js"></script>
+<script src="/js/feel.js"></script>
+<script>RS.start();</script>
+</body>
+</html>

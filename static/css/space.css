@@ -1,0 +1,155 @@
+/* space.css - the Space page (space.js): the next pass on an instrument panel (your sky with its path, a countdown,
+   chances and one button), the sky at a glance, coming up, recordings, satellites, aiming and orbit data.
+   Tokens from styles.css; the top panel is an instrument surface (.glass), so each style's own instrument look applies. */
+
+/* ---------------------------------------------------------------- the next pass */
+:root[data-style] .spx-next { display: grid; grid-template-columns: minmax(240px, 380px) minmax(0, 1fr); gap: 36px; align-items: center; padding: 28px 32px; margin-bottom: 16px; color: var(--inst-ink); }
+:root[data-style] .spx-sky { display: grid; gap: 10px; justify-items: center; }
+:root[data-style] .spx-sky-cv { display: block; width: 100%; aspect-ratio: 1; max-width: 380px; background: none; border-radius: 0; }
+:root[data-style] .spx-sky-key { display: flex; gap: 16px; font-size: 12.5px; color: color-mix(in srgb, var(--inst-ink) 70%, transparent); }
+:root[data-style] .spx-sky-key span { display: inline-flex; align-items: center; gap: 6px; }
+:root[data-style] .spx-k-path { width: 16px; height: 3px; border-radius: 2px; background: var(--sig); }
+:root[data-style] .spx-k-up { width: 7px; height: 7px; border-radius: 50%; background: color-mix(in srgb, var(--inst-ink) 55%, transparent); }
+:root[data-style] .spx-sky-note { margin: 0; max-width: 34ch; text-align: center; font-size: 12px; line-height: 1.4; color: color-mix(in srgb, var(--inst-ink) 60%, transparent); }
+:root[data-style] .spx-info { min-width: 0; }
+:root[data-style] .spx-when { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 15px; color: color-mix(in srgb, var(--inst-ink) 78%, transparent); }
+:root[data-style] .spx-nav { display: inline-flex; gap: 6px; }
+:root[data-style] .spx-nav .btn { width: 36px; padding: 0; justify-content: center; }
+:root[data-style] .spx-name { margin: 6px 0 0; font-family: var(--f-disp, inherit); font-weight: var(--w-disp, 500); font-size: clamp(30px, 3.6vw, 48px); line-height: 1.05; color: var(--inst-ink); overflow-wrap: anywhere; }
+:root[data-style] .spx-what { min-height: 1.4em; margin-top: 4px; font-size: 15px; color: color-mix(in srgb, var(--inst-ink) 72%, transparent); }
+:root[data-style] .spx-count { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 10px; margin: 18px 0 0; }
+:root[data-style] .spx-count b { font-family: var(--f-num); font-weight: var(--w-num, 500); font-size: clamp(30px, 3.4vw, 44px); line-height: 1; font-variant-numeric: tabular-nums; }
+:root[data-style] .spx-count span { font-size: 14px; color: color-mix(in srgb, var(--inst-ink) 70%, transparent); }
+:root[data-style] .spx-prog { height: 4px; margin-top: 12px; border-radius: 2px; overflow: hidden; background: color-mix(in srgb, var(--inst-ink) 14%, transparent); }
+:root[data-style] .spx-prog i { display: block; height: 100%; background: var(--sig); transform-origin: left; transform: scaleX(0); transition: transform 1s linear; }
+:root[data-style] .spx-facts { display: grid; grid-template-columns: repeat(3, auto); justify-content: start; gap: 4px 32px; margin: 20px 0 0; }
+:root[data-style] .spx-facts div { display: grid; gap: 2px; }
+:root[data-style] .spx-facts dt { font-size: 12.5px; color: color-mix(in srgb, var(--inst-ink) 65%, transparent); }
+:root[data-style] .spx-facts dd { margin: 0; font-family: var(--f-num); font-size: 20px; font-variant-numeric: tabular-nums; }
+:root[data-style] .spx-path { margin: 16px 0 0; max-width: 62ch; font-size: 14.5px; line-height: 1.5; color: color-mix(in srgb, var(--inst-ink) 80%, transparent); }
+:root[data-style] .spx-acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+:root[data-style] .spx-acts .btn.on, :root[data-style] .spx-row .btn.on { background: var(--inst-ink); color: var(--chassis, var(--sf)); border-color: transparent; }
+:root[data-style] .spx-row .btn.on { background: var(--ink); color: var(--sf); }
+:root[data-style] .spx-none { display: grid; gap: 6px; }
+:root[data-style] .spx-none b { font-family: var(--f-disp, inherit); font-weight: var(--w-disp, 500); font-size: 28px; }
+:root[data-style] .spx-none span { color: color-mix(in srgb, var(--inst-ink) 75%, transparent); }
+
+/* chances: a word with a small level, never colour alone */
+:root[data-style] .spx-q { display: inline-flex; align-items: center; gap: 6px; font-family: var(--f-body); font-size: 13px; white-space: nowrap; }
+:root[data-style] .spx-q::before { content: ""; width: 14px; height: 8px; border-radius: 1px;
+  background: linear-gradient(90deg, currentColor 0 22%, transparent 22% 26%, var(--q2, transparent) 26% 48%, transparent 48% 52%, var(--q3, transparent) 52% 74%, transparent 74% 78%, var(--q4, transparent) 78%);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 25%, transparent); }
+:root[data-style] .spx-q.q2 { --q2: currentColor; } :root[data-style] .spx-q.q3 { --q2: currentColor; --q3: currentColor; } :root[data-style] .spx-q.q4 { --q2: currentColor; --q3: currentColor; --q4: currentColor; }
+:root[data-style] .spx-facts .spx-q { font-size: 18px; }
+
+/* ---------------------------------------------------------------- following / recording */
+:root[data-style] .spx-strip { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; padding: 12px 16px; border-radius: var(--r-pop, 14px); background: var(--sf); border: 1px solid var(--stroke); }
+:root[data-style] .spx-strip.rec { border-color: color-mix(in srgb, var(--bad) 45%, var(--stroke)); }
+:root[data-style] .spx-strip-t { display: grid; gap: 2px; flex: 1 1 260px; min-width: 0; }
+:root[data-style] .spx-strip-t span, :root[data-style] .spx-strip-t small { font-size: 13.5px; color: var(--ink-2); }
+:root[data-style] .spx-bar { flex: 1 1 140px; height: 4px; border-radius: 2px; overflow: hidden; background: color-mix(in srgb, var(--ink) 12%, transparent); }
+:root[data-style] .spx-bar i { display: block; height: 100%; background: var(--bad); transform-origin: left; transition: transform .5s linear; }
+
+/* ---------------------------------------------------------------- sections */
+:root[data-style] .spx-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+:root[data-style] .spx-head h3 { margin: 0; }
+:root[data-style] .spx-glance { margin-bottom: 16px; }
+:root[data-style] .spx-glance > .sub { margin: 8px 0 14px; }
+:root[data-style] .spx-cols { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 16px; align-items: start; margin-bottom: 16px; }
+:root[data-style] .spx-empty { padding: 18px 2px; color: var(--ink-2); font-size: 14px; }
+:root[data-style] .spx-more { margin-top: 14px; }
+:root[data-style] .spx-more > summary { cursor: pointer; font-weight: 500; padding: 6px 0; }
+:root[data-style] .spx-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 10px 0; }
+:root[data-style] .spx-minel { margin-top: 12px; }
+
+/* the sky at a glance */
+:root[data-style] .spx-tl { --lab: 104px; position: relative; }
+:root[data-style] .spx-tl-axis, :root[data-style] .spx-tl-row { display: grid; grid-template-columns: var(--lab) minmax(0, 1fr); align-items: center; }
+:root[data-style] .spx-tl-axis .spx-tl-track { height: 20px; }
+:root[data-style] .spx-tl-row { min-height: 40px; border-top: 1px solid var(--stroke); }
+:root[data-style] .spx-tl-lab { font-size: 13.5px; font-weight: 500; padding-right: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+:root[data-style] .spx-tl-track { position: relative; height: 40px; }
+:root[data-style] .spx-tick { position: absolute; top: 0; transform: translateX(-50%); font-size: 11.5px; color: var(--ink-3, var(--ink-2)); white-space: nowrap; font-variant-numeric: tabular-nums; }
+:root[data-style] .spx-tick.day { color: var(--ink); font-weight: 500; }
+:root[data-style] .spx-pass { position: absolute; top: 50%; height: var(--h); min-width: 3px; padding: 0; margin: 0; transform: translateY(-50%); border: 0; border-radius: 2px; cursor: pointer;
+  background: color-mix(in srgb, var(--ink) var(--a, 55%), transparent); transition: background-color .15s ease, box-shadow .15s ease; }
+:root[data-style] .spx-pass.q1 { --a: 22%; } :root[data-style] .spx-pass.q2 { --a: 40%; } :root[data-style] .spx-pass.q3 { --a: 65%; } :root[data-style] .spx-pass.q4 { --a: 90%; }
+:root[data-style] .spx-pass.on { background: var(--sig, var(--ink)); }
+:root[data-style] .spx-pass.on { box-shadow: 0 0 0 2px var(--sf), 0 0 0 4px var(--ink); }
+:root[data-style] .spx-tl:has(> .kx-mark.ring:not([hidden])) .spx-pass.on { box-shadow: none; }
+:root[data-style] .spx-tl > .kx-mark.ring { z-index: 2; border-radius: 3px; }
+:root[data-style] .spx-pass.rec::after { content: ""; position: absolute; left: 50%; top: -9px; width: 6px; height: 6px; margin-left: -3px; border-radius: 50%; background: var(--bad); }
+:root[data-style] .spx-pass:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+@media (hover: hover) and (pointer: fine) { :root[data-style] .spx-pass:hover { background: var(--ink); } }
+:root[data-style] .spx-tl-now { position: absolute; top: 18px; bottom: 0; left: var(--lab); width: 2px; margin-left: -1px; background: var(--ink); opacity: .55; pointer-events: none; }
+
+/* rows (coming up, recordings) */
+:root[data-style] .spx-rows { margin-top: 10px; border-top: 1px solid var(--stroke); }
+:root[data-style] .spx-row { display: flex; align-items: center; gap: 10px; min-height: 58px; padding: 6px 4px; border-bottom: 1px solid var(--stroke); }
+:root[data-style] .spx-row.on { background: color-mix(in srgb, var(--pri) 12%, transparent); }
+:root[data-style] .spx-rows { position: relative; }
+:root[data-style] .spx-row { position: relative; z-index: 1; }
+:root[data-style] .spx-rows:has(> .kx-mark:not([hidden])) .spx-row.on { background: transparent; }
+:root[data-style] .spx-rows > .kx-mark { border-radius: 0; }
+:root[data-style] .spx-row-main { display: flex; align-items: center; gap: 14px; flex: 1; min-width: 0; padding: 4px 6px; margin: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; border-radius: var(--r-ctl); }
+:root[data-style] .spx-row-t { display: grid; flex: none; width: 78px; }
+:root[data-style] .spx-row-t b { white-space: nowrap; }
+:root[data-style] .spx-row-t b { font-family: var(--f-num); font-weight: var(--w-num, 500); font-variant-numeric: tabular-nums; font-size: 16px; }
+:root[data-style] .spx-row-t small, :root[data-style] .spx-row-n small { font-size: 12.5px; color: var(--ink-3, var(--ink-2)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+:root[data-style] .spx-row-n { display: grid; flex: 1; min-width: 0; }
+:root[data-style] .spx-row-n b { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+:root[data-style] .spx-row > .btn.small { flex: none; }
+:root[data-style] .spx-row > .btn.ghost { width: auto; padding: 0 12px; }
+:root[data-style] .spx-row .spx-q { color: var(--ink-2); }
+
+/* satellites */
+:root[data-style] .spx-sats { margin-bottom: 16px; }
+:root[data-style] .spx-satlist { margin-top: 10px; border-top: 1px solid var(--stroke); }
+:root[data-style] .spx-sat { border-bottom: 1px solid var(--stroke); }
+:root[data-style] .spx-sat > summary { display: flex; align-items: center; gap: 12px; min-height: 58px; padding: 6px 4px; cursor: pointer; list-style: none; }
+:root[data-style] .spx-sat > summary::-webkit-details-marker { display: none; }
+:root[data-style] .spx-sat-n { display: grid; flex: 1; min-width: 0; }
+:root[data-style] .spx-sat-n b { font-weight: 500; }
+:root[data-style] .spx-sat-n small { font-size: 12.5px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+:root[data-style] .spx-sat-s { display: inline-flex; align-items: center; gap: 8px; flex: none; }
+:root[data-style] .spx-sat-s small { font-size: 12.5px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+:root[data-style] .spx-sat-b { padding: 4px 4px 16px; display: grid; gap: 10px; }
+:root[data-style] .spx-sat-b > p { margin: 0; max-width: 72ch; color: var(--ink-2); }
+:root[data-style] .spx-ch { display: flex; align-items: center; justify-content: space-between; gap: 10px 16px; flex-wrap: wrap; padding: 10px 12px; border-radius: var(--r-ctl); background: var(--sf-2); }
+:root[data-style] .spx-ch-t { display: grid; gap: 2px; min-width: 0; }
+:root[data-style] .spx-ch-t small { font-size: 12.5px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+:root[data-style] .spx-ch-a { display: flex; flex-wrap: wrap; gap: 6px; }
+:root[data-style] .spx-chip { display: inline-block; width: fit-content; font-size: 12px; padding: 2px 8px; border-radius: var(--r-chip, 999px); background: color-mix(in srgb, var(--ink) 8%, transparent); color: var(--ink-2); white-space: nowrap; }
+:root[data-style] .spx-chip.good { background: color-mix(in srgb, var(--good) 16%, transparent); color: var(--ink); }
+:root[data-style] .spx-chip.warn { background: color-mix(in srgb, var(--bad) 14%, transparent); color: var(--ink); }
+:root[data-style] .spx-auto { max-width: 320px; }
+
+/* aiming and orbit data */
+:root[data-style] :is(.spx-aim, .spx-orbit) { margin-bottom: 16px; }
+:root[data-style] :is(.spx-aim, .spx-orbit) > summary { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; cursor: pointer; font-weight: 500; }
+:root[data-style] :is(.spx-aim, .spx-orbit) > summary .sub { font-weight: 400; }
+:root[data-style] .spx-aim-card { margin-top: 14px; }
+:root[data-style] .spx-orbit textarea { min-height: 96px; }
+
+@media (max-width: 900px) {
+  :root[data-style] .spx-next { grid-template-columns: minmax(0, 1fr); gap: 20px; padding: 20px; }
+  :root[data-style] .spx-sky-cv { max-width: 300px; }
+  :root[data-style] .spx-cols { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 760px) {
+  :root[data-style] .spx-next { padding: 16px; }
+  :root[data-style] .spx-sky { order: 2; }
+  :root[data-style] .spx-sky-cv { max-width: 270px; }
+  :root[data-style] .spx-facts { gap: 4px 22px; }
+  :root[data-style] .spx-tl { --lab: 78px; }
+  :root[data-style] .spx-tl-lab { font-size: 12.5px; }
+  :root[data-style] .spx-row-t { width: 68px; }
+  :root[data-style] .spx-row-t b { font-size: 15px; white-space: nowrap; }
+  :root[data-style] .spx-row .spx-q { display: none; }
+  :root[data-style] .spx-row > .btn.small:not(.ghost) { width: 40px; padding: 0; justify-content: center; }
+  :root[data-style] .spx-row > .btn.small:not(.ghost) > span:not(.kx-rw) { display: none; }
+  :root[data-style] .spx-sat-s small { display: none; }
+  :root[data-style] .spx-acts .btn { flex: 1 1 auto; justify-content: center; }
+}
+@media (prefers-reduced-motion: reduce) { :root[data-style] .spx-prog i { transition: none; } }
+:root[data-motion="off"] .spx-prog i { transition: none; }

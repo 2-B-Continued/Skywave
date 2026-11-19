@@ -1,0 +1,169 @@
+/* radio.css - the Radio page (radio.js). The stage: cover, station, song, signal, listen and seek; the tuning ribbon with
+   the stations written on its scale; the band map. Then your stations, the lists, about this station, sound and tuning.
+   Tokens from styles.css; the stage is an instrument surface (.glass), so each style's own instrument look applies. */
+
+/* ---------------------------------------------------------------- head and bands */
+:root[data-style] .rdx-bands { display: flex; flex-wrap: nowrap; width: fit-content; max-width: 100%; margin: 0 0 14px; overflow: visible; }
+:root[data-style] .rdx-bands::-webkit-scrollbar { display: none; }
+:root[data-style] .rdx-bands button { white-space: nowrap; padding: 8px 14px; font-weight: 500; }
+:root[data-style] .rdx-cta { margin-bottom: 14px; }
+
+/* ---------------------------------------------------------------- the stage */
+:root[data-style] .rdx-stage { position: relative; isolation: isolate; overflow: hidden; padding: 28px 32px 16px; color: var(--inst-ink); }
+:root[data-style] .rdx-stage::before { content: ""; position: absolute; inset: -60px; z-index: -1; pointer-events: none; background: var(--art-url, none) center / cover no-repeat;
+  filter: blur(64px) saturate(1.4); opacity: 0; transition: opacity .6s ease; }
+:root[data-style] .rdx-stage.has-art::before { opacity: .32; }
+:root[data-style="ticket"] .rdx-stage { -webkit-mask: none; mask: none; }
+
+:root[data-style] .rdx-now { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 28px; }
+:root[data-style] .rdx-cover { margin: 0; }
+:root[data-style] .rdx-cover .np-art { position: relative; display: grid; place-items: center; width: clamp(128px, 13vw, 176px); aspect-ratio: 1; overflow: hidden;
+  border-radius: min(var(--r), 14px); background: color-mix(in srgb, var(--inst-ink) 9%, transparent); box-shadow: none; }
+:root[data-style] .rdx-cover .np-art::after { display: none; }
+:root[data-style] .rdx-cover img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity .4s ease; }
+:root[data-style] .rdx-cover.on img { opacity: 1; }
+:root[data-style] .rdx-cover.on .np-art { cursor: pointer; }
+:root[data-style] .rdx-mono { font-family: var(--f-num); font-weight: var(--w-num, 500); font-size: clamp(30px, 3.2vw, 42px); font-variant-numeric: tabular-nums;
+  color: color-mix(in srgb, var(--inst-ink) 62%, transparent); user-select: none; }
+:root[data-style] .rdx-cover figcaption { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+:root[data-style] .rdx-main { min-width: 0; }
+:root[data-style] .rdx-name { margin: 0; font-family: var(--f-disp, inherit); font-weight: var(--w-disp, 500); font-size: clamp(28px, 3.4vw, 46px); line-height: 1.06;
+  color: var(--inst-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+:root[data-style] .rdx-song { margin: 8px 0 16px; min-height: 1.45em; font-size: 16px; line-height: 1.45; color: color-mix(in srgb, var(--inst-ink) 78%, transparent);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+:root[data-style] .rdx-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; }
+:root[data-style] .rdx-freq { display: inline-flex; align-items: baseline; padding: 4px 10px; min-height: 34px; box-sizing: border-box; border: 1px solid color-mix(in srgb, var(--inst-ink) 24%, transparent);
+  border-radius: var(--r-ctl); font-family: var(--f-num); font-weight: var(--w-num, 500); font-size: 20px; line-height: 1.2; font-variant-numeric: tabular-nums; cursor: text; }
+:root[data-style] .rdx-freq small { font-family: var(--f-body); font-weight: 400; font-size: 12px; margin-left: 4px; opacity: .7; }
+@media (hover: hover) and (pointer: fine) { :root[data-style] .rdx-freq:hover { border-color: color-mix(in srgb, var(--inst-ink) 50%, transparent); } }
+:root[data-style] .rdx-freq .freq-edit { font: inherit; width: 8ch; height: auto; color: inherit; background: transparent; border: 0; outline: 0; padding: 0; }
+:root[data-style] .rdx-str { display: inline-flex; align-items: flex-end; gap: 2px; height: 14px; }
+:root[data-style] .rdx-str i { width: 3px; border-radius: 1px; background: color-mix(in srgb, var(--inst-ink) 20%, transparent); transition: background-color .2s ease; }
+:root[data-style] .rdx-str i:nth-child(1) { height: 4px; } :root[data-style] .rdx-str i:nth-child(2) { height: 6px; } :root[data-style] .rdx-str i:nth-child(3) { height: 9px; }
+:root[data-style] .rdx-str i:nth-child(4) { height: 11px; } :root[data-style] .rdx-str i:nth-child(5) { height: 14px; }
+:root[data-style] .rdx-str i.on { background: var(--inst-ink); }
+:root[data-style] .rdx-strl { margin-left: -6px; font-size: 13px; color: color-mix(in srgb, var(--inst-ink) 75%, transparent); }
+:root[data-style] .rdx-tags { display: contents; }
+:root[data-style] .rdx-tags span { font-size: 12.5px; padding: 3px 8px; border-radius: var(--r-ctl); background: color-mix(in srgb, var(--inst-ink) 10%, transparent); }
+:root[data-style] .rdx-main .rd-sig { margin-top: 12px; font-size: 13px; color: color-mix(in srgb, var(--inst-ink) 72%, transparent); }
+:root[data-style] .rdx-main .rd-sig b { color: inherit; font-weight: 500; }
+
+:root[data-style] .rdx-play { display: flex; align-items: center; gap: 10px; }
+:root[data-style] .rdx-listen { min-width: 136px; min-height: 52px; justify-content: center; gap: 8px; font-size: 16px; }
+:root[data-style] .rdx-listen-i { display: inline-grid; place-items: center; }
+:root[data-style] .rdx-listen-i svg { width: 18px; height: 18px; }
+:root[data-style] .rdx-seek { width: 48px; min-width: 48px; height: 48px; padding: 0; justify-content: center; }
+
+/* ---------------------------------------------------------------- tuner and band map */
+:root[data-style] .rdx-tuner { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; align-items: center; gap: 4px; margin: 22px -24px 0; }
+:root[data-style] .rdx-ribbon { display: block; width: 100%; height: 120px; touch-action: pan-y; cursor: grab; border-radius: 0; background: none; }
+:root[data-style] .rdx-ribbon:active { cursor: grabbing; }
+:root[data-style] .rdx-ribbon:focus-visible { outline: 2px solid var(--inst-ink); outline-offset: 2px; }
+:root[data-style] .rdx-nudge { width: 40px; min-width: 40px; height: 40px; padding: 0; justify-content: center; background: transparent; border-color: transparent; box-shadow: none; }
+:root[data-style] .rdx-mapbar { display: flex; align-items: center; gap: 14px; margin-top: 10px; }
+:root[data-style] .rdx-map { flex: 1; min-width: 0; height: 52px; display: block; cursor: pointer; touch-action: none; background: none; border-radius: 0; }
+:root[data-style] .rdx-mapacts { display: flex; align-items: center; gap: 8px; flex: none; }
+:root[data-style] .rdx-zoom { display: inline-flex; gap: 4px; }
+:root[data-style] .rdx-zoom .btn { width: 34px; padding: 0; justify-content: center; }
+:root[data-style] .rdx-acts { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 14px; padding-top: 14px; border-top: 1px solid color-mix(in srgb, var(--inst-ink) 12%, transparent); }
+:root[data-style] .rdx-help { margin-left: auto; font-size: 12.5px; color: color-mix(in srgb, var(--inst-ink) 62%, transparent); }
+:root[data-style] #rd-star.on svg { fill: currentColor; }
+:root[data-style] #rd-sleep.on, :root[data-style] .rdx-listen.on { background: var(--inst-ink); color: var(--chassis, var(--sf)); border-color: transparent; }
+:root[data-style] .rdx-stage .scan-progress { margin-top: 8px; }
+
+@media (max-width: 900px) {
+  :root[data-style] .rdx-now { grid-template-columns: auto minmax(0, 1fr); gap: 18px; }
+  :root[data-style] .rdx-play { grid-column: 1 / -1; }
+  :root[data-style] .rdx-listen { flex: 1; }
+}
+@media (max-width: 760px) {
+  /* phones: the bands become separate chips in a row that scrolls edge to edge, so none is cut off by a container */
+  :root[data-style] .rdx-bands { width: auto; max-width: none; margin: 0 -14px 12px; padding: 2px 14px 4px; gap: 6px; border: 0; border-radius: 0; background: none; box-shadow: none;
+    overflow-x: auto; scrollbar-width: none; scroll-snap-type: x proximity; scroll-padding-inline: 14px; -webkit-backdrop-filter: none; backdrop-filter: none; }
+  :root[data-style] .rdx-bands button { flex: none; scroll-snap-align: start; padding: 8px 14px; border: 1px solid var(--stroke); border-radius: var(--r-chip, 999px); background: var(--sf); }
+  :root[data-style] .rdx-bands button[aria-pressed="true"] { border-color: transparent; }
+  :root[data-style] .rdx-stage { padding: 16px 16px 12px; }
+  :root[data-style] .rdx-now { gap: 14px; }
+  :root[data-style] .rdx-cover .np-art { width: 92px; }
+  :root[data-style] .rdx-mono { font-size: 26px; }
+  :root[data-style] .rdx-name { font-size: 26px; }
+  :root[data-style] .rdx-song { margin: 4px 0 10px; font-size: 14.5px; }
+  :root[data-style] .rdx-freq { font-size: 18px; }
+  :root[data-style] .rdx-tuner { margin-inline: -12px; grid-template-columns: 36px minmax(0, 1fr) 36px; margin-top: 14px; }
+  :root[data-style] .rdx-ribbon { height: 108px; }
+  :root[data-style] .rdx-mapacts .btn > span:not(.kx-rw) { display: none; }
+  :root[data-style] .rdx-mapacts .btn { width: 40px; padding: 0; justify-content: center; }
+  :root[data-style] .rdx-acts .btn { flex: 1; justify-content: center; }
+}
+
+/* ---------------------------------------------------------------- your stations */
+:root[data-style] .rdp-presets { margin: 18px 0 14px; }
+:root[data-style] .rdp-h { display: flex; align-items: baseline; gap: 8px; margin-bottom: 10px; }
+:root[data-style] .rdp-h h3 { margin: 0; }
+:root[data-style] .rdp-strip { display: flex; gap: 10px; overflow-x: auto; padding: 2px 2px 8px; scroll-snap-type: x proximity; scrollbar-width: thin; }
+:root[data-style] .rdp-preset { position: relative; flex: 0 0 auto; width: 158px; min-height: 84px; scroll-snap-align: start; border: var(--sw, 1px) solid var(--stroke); border-radius: min(var(--r), 16px);
+  background: var(--sf); box-shadow: var(--elev, none); transition: border-color .15s ease, background-color .15s ease; }
+:root[data-style] .rdp-preset.on { border-color: transparent; background: var(--pri); color: var(--pri-ink); }
+:root[data-style] .rdp-preset-b { display: grid; align-content: start; gap: 2px; width: 100%; height: 100%; min-height: 84px; padding: 12px 14px; margin: 0; border: 0; border-radius: inherit;
+  background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+:root[data-style] .rdp-preset-b b { font-family: var(--f-num); font-weight: var(--w-num); font-size: 26px; line-height: 1.1; font-variant-numeric: tabular-nums; white-space: nowrap; }
+:root[data-style] .rdp-preset-b b small { font-family: var(--f-body); font-weight: 400; font-size: 12px; margin-left: 4px; opacity: .7; }
+:root[data-style] .rdp-preset-b span { font-size: 13px; opacity: .8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+:root[data-style] .rdp-x { position: absolute; top: 6px; right: 6px; display: grid; place-items: center; width: 28px; height: 28px; padding: 0; margin: 0; border: 0; border-radius: 50%;
+  background: color-mix(in srgb, var(--ink) 10%, transparent); color: inherit; cursor: pointer; opacity: 0; transition: opacity .15s ease; }
+:root[data-style] .rdp-x svg { width: 14px; height: 14px; }
+:root[data-style] .rdp-preset:hover .rdp-x, :root[data-style] .rdp-x:focus-visible { opacity: 1; }
+@media (hover: none) { :root[data-style] .rdp-x { opacity: .7; } }
+:root[data-style] .rdp-add { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 16px; border-style: dashed; background: transparent; box-shadow: none; color: var(--ink-2);
+  font: inherit; font-size: 14px; cursor: pointer; width: auto; max-width: 260px; }
+:root[data-style] .rdp-add span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+:root[data-style] .rdp-add svg { width: 16px; height: 16px; flex: none; }
+
+/* ---------------------------------------------------------------- lists and side cards */
+:root[data-style] .rdp-grid { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 14px; align-items: start; }
+:root[data-style] .rdp-side { display: grid; gap: 14px; }
+:root[data-style] .rdp-tabs { display: flex; width: 100%; }
+:root[data-style] .rdp-tabs button { flex: 1; white-space: nowrap; }
+:root[data-style] .rdp-tab-sub { margin: 10px 0 6px; }
+:root[data-style] .rdp-list { max-height: 520px; overflow-y: auto; border-top: 1px solid var(--stroke); overscroll-behavior: contain; }
+:root[data-style] .rdp-row { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px; padding: 8px 10px; margin: 0; border: 0; border-bottom: 1px solid var(--stroke); border-radius: 0;
+  background: transparent; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+@media (hover: hover) and (pointer: fine) { :root[data-style] .rdp-row:hover { background: var(--ctl); } }
+:root[data-style] .rdp-row { position: relative; z-index: 1; }
+:root[data-style] .rdp-row.on { background: color-mix(in srgb, var(--pri) 14%, transparent); }
+:root[data-style] .rdp-list:has(> .kx-mark:not([hidden])) .rdp-row.on { background: transparent; }
+:root[data-style] .rdp-list { position: relative; }
+:root[data-style] .rdp-row-t { display: grid; flex: 1; min-width: 0; }
+:root[data-style] .rdp-row-t b { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+:root[data-style] .rdp-row-t small { font-size: 12.5px; color: var(--ink-3, var(--ink-2)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+:root[data-style] .rdp-row-r { display: inline-flex; align-items: center; gap: 8px; flex: none; font-size: 12.5px; color: var(--ink-3, var(--ink-2)); }
+:root[data-style] .rdp-row-r svg { width: 15px; height: 15px; color: var(--sig); }
+:root[data-style] .rdp-bars { display: inline-flex; align-items: flex-end; gap: 2px; height: 13px; }
+:root[data-style] .rdp-bars i { width: 3px; border-radius: 1px; background: color-mix(in srgb, var(--ink) 16%, transparent); }
+:root[data-style] .rdp-bars i:nth-child(1) { height: 4px; } :root[data-style] .rdp-bars i:nth-child(2) { height: 7px; } :root[data-style] .rdp-bars i:nth-child(3) { height: 10px; } :root[data-style] .rdp-bars i:nth-child(4) { height: 13px; }
+:root[data-style] .rdp-bars i.on { background: var(--ink-2); }
+:root[data-style] .rdp-song { display: flex; align-items: center; gap: 12px; min-height: 62px; padding: 8px 10px; border-bottom: 1px solid var(--stroke); }
+:root[data-style] .rdp-song img, :root[data-style] .rdp-song-ph { width: 44px; height: 44px; flex: none; border-radius: 8px; object-fit: cover; background: var(--sf-2); }
+:root[data-style] .rdp-foot { padding: 12px 0 2px; }
+:root[data-style] .rdp-kv { margin-top: 0; }
+:root[data-style] .rdp-af { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 12px; }
+:root[data-style] .rdp-af > span { font-size: 13px; color: var(--ink-2); margin-right: 2px; }
+:root[data-style] .rdp-af .chip { min-height: 30px; font-variant-numeric: tabular-nums; }
+:root[data-style] .rdp-af small { flex-basis: 100%; font-size: 12px; color: var(--ink-3, var(--ink-2)); }
+:root[data-style] .rdp-tune h3 { margin-top: 0; }
+:root[data-style] .rdp-sq { margin-top: 10px; transition: opacity .2s ease; }
+:root[data-style] .rdp-sq.off { opacity: .5; }
+:root[data-style] .rdp-adv { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--stroke); display: grid; gap: 12px; }
+:root[data-style] #rd-scope-wrap { margin-top: 14px; padding: 12px 18px; }
+:root[data-style] #rd-sleep.on { background: var(--ink); color: var(--chassis, var(--sf)); }
+
+@media (max-width: 900px) {
+  :root[data-style] .rdp-grid { grid-template-columns: minmax(0, 1fr); }
+  :root[data-style] .rdp-preset { width: 138px; min-height: 76px; }
+  :root[data-style] .rdp-preset.rdp-add { width: auto; max-width: 78vw; }
+  :root[data-style] .rdp-preset-b { min-height: 76px; padding: 10px 12px; }
+  :root[data-style] .rdp-preset-b b { font-size: 22px; }
+  :root[data-style] .rdp-tabs button { font-size: 13px; padding-left: 6px; padding-right: 6px; }
+}
+

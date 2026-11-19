@@ -1,0 +1,138 @@
+/* sensors.css - the Sensors page (sensors.js). From the style tokens in styles.css, so each style keeps its look. */
+
+/* ---------------------------------------------------------------- status strip */
+:root[data-style] .sen-bar { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 14px; min-height: 68px; padding: 12px 14px 12px 20px;
+  border-radius: var(--r); color: var(--inst-ink, var(--glass-ink)); margin-bottom: 22px; }
+:root[data-style] .sen-led { width: 10px; height: 10px; border-radius: 50%; background: currentColor; opacity: .4; transition: background-color .3s ease, opacity .3s ease; }
+:root[data-style] .sen-led[data-s="on"] { background: var(--pri); opacity: 1; }
+:root[data-style] .sen-led[data-s="live"] { background: var(--good, #3ccf7d); opacity: 1; box-shadow: 0 0 0 4px color-mix(in srgb, var(--good, #3ccf7d) 22%, transparent); }
+:root[data-style] .sen-led[data-s="wait"] { background: var(--sig); opacity: 1; animation: sen-blink 1.2s ease-in-out infinite; }
+:root[data-style] .sen-led[data-s="bad"] { background: var(--bad, #e5484d); opacity: 1; }
+@keyframes sen-blink { 50% { opacity: .35; } }
+:root[data-style] .sen-bar-t { display: grid; gap: 2px; min-width: 0; }
+:root[data-style] .sen-bar-t b { font-weight: 600; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+:root[data-style] .sen-bar-t small { font-size: 13px; opacity: .78; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+:root[data-style] .sen-band { min-height: 40px; gap: 6px; white-space: nowrap; }
+:root[data-style] .sen-band svg { width: 14px; height: 14px; }
+
+/* ---------------------------------------------------------------- your sensors */
+:root[data-style] .sen-sec { margin-bottom: 22px; }
+:root[data-style] .sen-sec.none { display: none; }
+:root[data-style] .sen-h { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+:root[data-style] .sen-h h3 { margin: 0; }
+:root[data-style] .sen-h .sub { display: block; margin-top: 2px; font-variant-numeric: tabular-nums; }
+:root[data-style] .sen-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
+:root[data-style] .sen-card { display: grid; grid-template-rows: auto auto auto auto 1fr auto; gap: 2px; min-width: 0; min-height: 206px; padding: 18px; margin: 0;
+  border: var(--sw, 1px) solid var(--stroke); border-radius: var(--r); background: var(--sf); box-shadow: var(--elev, none); color: var(--ink); font: inherit; text-align: left; cursor: pointer;
+  transition: opacity .3s ease, border-color .15s ease; -webkit-tap-highlight-color: transparent; }
+@media (hover: hover) and (pointer: fine) { :root[data-style] .sen-card:hover { border-color: color-mix(in srgb, var(--ink) 22%, transparent); } }
+:root[data-style] .sen-card:active { scale: .99; }
+:root[data-style] .sen-card.stale { opacity: .62; }
+:root[data-style] .sen-card-h { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; }
+:root[data-style] .sen-card-h b { font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+:root[data-style] .sen-card-k { font-size: 12.5px; color: var(--ink-3, var(--ink-2)); }
+:root[data-style] .sen-big { margin-top: 8px; font-family: var(--f-num); font-weight: var(--w-num); letter-spacing: var(--tr-num); font-size: 40px; line-height: 1.05; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+:root[data-style] .sen-none { font-family: var(--f-body); font-size: 14px; letter-spacing: 0; font-weight: 400; color: var(--ink-3, var(--ink-2)); }
+:root[data-style] .sen-card-r { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 6px; font-size: 14px; font-weight: 500; font-variant-numeric: tabular-nums; }
+:root[data-style] .sen-card-r > span { display: grid; }
+:root[data-style] .sen-card-r small { font-size: 11.5px; font-weight: 400; color: var(--ink-3, var(--ink-2)); }
+:root[data-style] .sen-spark { display: block; width: 100%; height: 44px; margin-top: 10px; align-self: end; }
+:root[data-style] .sen-card-f { display: flex; align-items: center; gap: 10px; margin-top: 8px; font-size: 12.5px; color: var(--ink-3, var(--ink-2)); }
+:root[data-style] .sen-card-f > span:first-child { flex: 1; }
+:root[data-style] .sen-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: color-mix(in srgb, var(--ink) 25%, transparent); }
+:root[data-style] .live .sen-dot { background: var(--good, #3ccf7d); }
+:root[data-style] .ok .sen-dot { background: color-mix(in srgb, var(--good, #3ccf7d) 55%, var(--ink-3, #888)); }
+:root[data-style] .sen-bat { color: var(--bad, #e5484d); font-weight: 500; }
+:root[data-style] .sen-sig { display: inline-flex; align-items: flex-end; gap: 2px; height: 13px; flex: none; }
+:root[data-style] .sen-sig i { width: 3px; border-radius: 1px; background: color-mix(in srgb, var(--ink) 16%, transparent); }
+:root[data-style] .sen-sig i:nth-child(1) { height: 4px; } :root[data-style] .sen-sig i:nth-child(2) { height: 7px; } :root[data-style] .sen-sig i:nth-child(3) { height: 10px; } :root[data-style] .sen-sig i:nth-child(4) { height: 13px; }
+:root[data-style] .sen-sig i.on { background: var(--ink-2); }
+:root[data-style] .sen-hint { display: flex; align-items: flex-start; gap: 12px; padding: 16px 18px; border: 1px dashed color-mix(in srgb, var(--ink) 18%, transparent); border-radius: min(var(--r), 16px); grid-column: 1 / -1; }
+:root[data-style] .sen-hint svg { width: 18px; height: 18px; flex: none; margin-top: 2px; color: var(--ink-3, var(--ink-2)); }
+:root[data-style] .sen-hint > span { display: grid; gap: 2px; color: var(--ink-2); font-size: 14px; }
+:root[data-style] .sen-hint > span > b:first-child { color: var(--ink); font-weight: 500; }
+
+/* ---------------------------------------------------------------- nearby */
+:root[data-style] .sen-tools { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+:root[data-style] .sen-q { flex: 0 1 240px; }
+:root[data-style] .sen-tools select { min-height: 40px; margin: 0; width: auto; }
+:root[data-style] .sen-tools .locp-in input { min-height: 40px; }
+:root[data-style] .sen-list { border-top: 1px solid var(--stroke); }
+:root[data-style] .sen-row { display: flex; align-items: center; gap: 6px; border-bottom: 1px solid var(--stroke); transition: opacity .3s ease; }
+:root[data-style] .sen-row.stale { opacity: .6; }
+:root[data-style] .sen-row-b { flex: 1; min-width: 0; display: grid; grid-template-columns: 10px minmax(0, 1.7fr) minmax(0, 1fr) auto; align-items: center; gap: 14px;
+  min-height: 60px; padding: 10px 8px; margin: 0; border: 0; border-radius: 0; background: transparent; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+@media (hover: hover) and (pointer: fine) { :root[data-style] .sen-row-b:hover { background: var(--ctl); } }
+:root[data-style] .sen-row-b:focus-visible { outline: 2px solid var(--pri); outline-offset: -2px; }
+:root[data-style] .sen-row-t { display: grid; min-width: 0; }
+:root[data-style] .sen-row-t b { font-size: 14.5px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+:root[data-style] .sen-row-t small { font-size: 12.5px; color: var(--ink-3, var(--ink-2)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+:root[data-style] .sen-row-v { display: grid; font-size: 15px; font-weight: 500; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+:root[data-style] .sen-row-v small { font-size: 12px; }
+:root[data-style] .sen-row-s { display: inline-flex; align-items: center; justify-content: flex-end; gap: 10px; font-size: 12.5px; color: var(--ink-3, var(--ink-2)); white-space: nowrap; min-width: 112px; }
+:root[data-style] .sen-mine { flex: none; gap: 5px; }
+:root[data-style] .sen-mine svg { width: 15px; height: 15px; }
+:root[data-style] .sen-k { width: 10px; height: 10px; border-radius: 3px; background: color-mix(in srgb, var(--ink) 30%, transparent); }
+:root[data-style] .sen-k-weather { background: #4aa3df; } :root[data-style] .sen-k-temp { background: #e7894a; } :root[data-style] .sen-k-power { background: #e3b341; }
+:root[data-style] .sen-k-meter { background: #9b7be0; } :root[data-style] .sen-k-security { background: #e5484d; } :root[data-style] .sen-k-remote { background: #3dbdb0; }
+:root[data-style] .sen-k-soil { background: #59b36b; }
+:root[data-style] .sen-empty { display: grid; gap: 4px; padding: 22px 4px; }
+:root[data-style] .sen-empty b { font-weight: 500; }
+:root[data-style] .sen-empty span { font-size: 14px; color: var(--ink-2); max-width: 60ch; }
+:root[data-style] .sen-fold { border-bottom: 1px solid var(--stroke); }
+:root[data-style] .sen-fold > summary { padding: 14px 8px; cursor: pointer; font-weight: 500; font-variant-numeric: tabular-nums; }
+:root[data-style] .sen-fold[open] > summary { padding-bottom: 6px; }
+:root[data-style] .sen-fold-p { margin: 0 8px 10px; font-size: 13px; color: var(--ink-3, var(--ink-2)); }
+:root[data-style] .sen-fold .sen-list { border-top: 0; }
+:root[data-style] .sen-fold .sen-row:last-child { border-bottom: 0; }
+:root[data-style] .sen-foot { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+
+/* ---------------------------------------------------------------- one sensor's sheet, and the band picker */
+.modal.sen-modal { width: min(560px, calc(100vw - 24px)); max-width: 560px; }
+:root[data-style] .sen-sh-h { display: grid; gap: 2px; padding-right: 28px; }
+:root[data-style] .sen-name { width: 100%; min-height: 0; margin: 0; padding: 2px 0 4px; border: 0; border-bottom: 1px dashed transparent; border-radius: 0; background: transparent; box-shadow: none;
+  color: var(--ink); font: 600 21px/1.25 var(--f-body); }
+:root[data-style] .sen-name:hover, :root[data-style] .sen-name:focus { border-bottom-color: color-mix(in srgb, var(--ink) 30%, transparent); outline: none; }
+:root[data-style] .sen-sh-h small { font-size: 13px; color: var(--ink-3, var(--ink-2)); }
+:root[data-style] .sen-sh-act { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 16px; }
+:root[data-style] .sen-sh-act svg { width: 15px; height: 15px; }
+:root[data-style] .sen-kv { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; margin: 0; }
+:root[data-style] .sen-kv > div { padding: 10px 12px; border-radius: min(var(--r-ctl), 12px); background: var(--sf-2); }
+:root[data-style] .sen-kv dt { font-size: 12px; color: var(--ink-3, var(--ink-2)); }
+:root[data-style] .sen-kv dd { margin: 2px 0 0; font-family: var(--f-num); font-weight: var(--w-num); font-size: 20px; font-variant-numeric: tabular-nums; }
+:root[data-style] .sen-charts figure { margin: 16px 0 0; }
+:root[data-style] .sen-charts figcaption { font-size: 12.5px; color: var(--ink-3, var(--ink-2)); margin-bottom: 4px; }
+:root[data-style] .sen-charts canvas { display: block; width: 100%; height: 120px; }
+:root[data-style] .sen-charts .sen-none { margin: 14px 0 0; }
+:root[data-style] .sen-meta { margin: 16px 0 0; }
+:root[data-style] .sen-meta > div { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--stroke); font-size: 14px; }
+:root[data-style] .sen-meta dt { color: var(--ink-2); }
+:root[data-style] .sen-meta dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+:root[data-style] .sen-raw { margin-top: 12px; }
+:root[data-style] .sen-raw summary { cursor: pointer; font-size: 13.5px; color: var(--ink-2); }
+:root[data-style] .sen-lbl { margin: 14px 0 6px; font-size: 12.5px; font-weight: 500; color: var(--ink-3, var(--ink-2)); }
+:root[data-style] .sen-modal .locp-res { max-height: none; }
+:root[data-style] .sen-modal .locp-row > svg { width: 16px; height: 16px; flex: none; color: var(--pri); }
+
+/* ---------------------------------------------------------------- phones */
+@media (max-width: 700px) {
+  :root[data-style] .sen-bar { grid-template-columns: auto minmax(0, 1fr); padding: 12px 14px; gap: 10px 12px; }
+  :root[data-style] .sen-band { grid-column: 1 / -1; justify-content: space-between; }
+  :root[data-style] .sen-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  :root[data-style] .sen-card { min-height: 0; padding: 14px; }
+  :root[data-style] .sen-big { font-size: 30px; margin-top: 6px; }
+  :root[data-style] .sen-card-r { display: none; }
+  :root[data-style] .sen-spark { height: 34px; }
+  :root[data-style] .sen-card-f .sen-sig { display: none; }
+  :root[data-style] .sen-tools { width: 100%; }
+  :root[data-style] .sen-q { flex: 1 1 100%; }
+  :root[data-style] .sen-tools select { flex: 1 1 0; min-width: 0; }
+  :root[data-style] .sen-row-b { grid-template-columns: 10px minmax(0, 1fr) auto; gap: 4px 12px; }
+  :root[data-style] .sen-row-b .sen-k { grid-row: 1 / 3; }
+  :root[data-style] .sen-row-s { grid-column: 3; justify-content: flex-end; min-width: 0; }
+  :root[data-style] .sen-row-v { grid-column: 3; grid-row: 1; text-align: right; }
+  :root[data-style] .sen-row-t { grid-row: 1 / 3; }
+  :root[data-style] .sen-mine span { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { :root[data-style] .sen-led[data-s="wait"] { animation: none; } }
+:root[data-motion="off"] .sen-led[data-s="wait"] { animation: none; }
