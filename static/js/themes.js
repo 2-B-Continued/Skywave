@@ -32,22 +32,24 @@
     { id: 'obsidian', name: 'Obsidian Gold', dark: true, c: { bg: '#0b0a09', panel: '#151311', ink: '#f1ebdf', accent: '#d6ad45', signal: '#f4d77a', glass: '#070605', hot: '#c9892b' }, note: 'Black stone with brushed gold. Quiet luxury' },
     { id: 'swiss', name: 'Swiss Red', dark: false, c: { bg: '#efefef', panel: '#ffffff', ink: '#101010', accent: '#d7261e', signal: '#ff4a3d', glass: '#141414', hot: '#d7261e' }, note: 'White paper, black type, one red. Graphic design studio' },
     { id: 'violet', name: 'Royal Violet', dark: true, c: { bg: '#0e0913', panel: '#1a1223', ink: '#f0e9f8', accent: '#b784ff', signal: '#ff7ad1', glass: '#080510', hot: '#6ff0cf' }, note: 'Aubergine with violet, magenta and mint' },
+    { id: 'clay', name: 'Clay', dark: false, c: { bg: '#e3e8ef', panel: '#e3e8ef', ink: '#262f3d', accent: '#4459d6', signal: '#f07b2f', glass: '#1d2430', hot: '#f07b2f' }, note: 'One soft blue-grey for every surface. Made for the Relief style' },
+    { id: 'carnival', name: 'Carnival', dark: false, c: { bg: '#fff0d4', panel: '#fffaf0', ink: '#1d0b33', accent: '#d4006f', signal: '#ffaa00', glass: '#1d0b33', hot: '#00a39b' }, note: 'Cream with magenta, saffron and teal. Made for the Riot style' },
     { id: 'mint', name: 'Mint Studio', dark: false, c: { bg: '#e3efe9', panel: '#f8fcfa', ink: '#0f2a20', accent: '#087f58', signal: '#e2492a', glass: '#0f2a20', hot: '#e2492a' }, note: 'Fresh pale green and deep emerald, for daytime' },
     { id: 'contrast', name: 'High contrast', dark: true, c: { bg: '#000000', panel: '#0d0d0d', ink: '#ffffff', accent: '#4dd2ff', signal: '#ffd400', glass: '#000000' }, note: 'Maximum legibility' },
   ];
   const byId = Object.fromEntries(T.map(t => [t.id, t]));
   // ---- style: the shape of everything (corners, frames, type). Colour themes sit on top of it.
   const STYLES = [
-    { id: 'skywave', name: 'Skywave', theme: 'forest', note: 'Spatial glass: capsule controls and soft frosted panes over a colour field whose hue follows the band you tune. Best with Forest.' },
-    { id: 'aurora', name: 'Aurora', theme: 'obsidian', note: 'The observatory: black and gold, the thinnest type, one centred column and a dock for navigation. Best with Obsidian Gold.' },
-    { id: 'classic', name: 'Classic', theme: '', note: 'Daylight instrument: white and stone surfaces, a black instrument with a lit readout, tight grotesque type.' },
-    { id: 'lumen', name: 'Lumen', theme: 'violet', note: 'The pro workspace: a sidebar, dense type, hairlines and surface steps, violet for selection. Always dark: light palettes switch to Royal Violet.' },
+    { id: 'skywave', name: 'Skywave', theme: 'forest', note: 'Frosted glass: capsule controls and soft panes over a colour field whose hue follows the band you tune. Best with Forest.' },
+    { id: 'depth', name: 'Depth', theme: 'midnight', note: 'Windows in a room: frosted panes float at different depths, lift toward you under the pointer, and the pages sit beside a floating column of tabs. Best with Midnight.' },
+    { id: 'relief', name: 'Relief', theme: 'clay', note: 'Soft relief: everything is pressed out of one smooth surface, lit from the top left. Buttons rise, and sink in when chosen. Best with Clay.' },
+    { id: 'walnut', name: 'Walnut', theme: 'autumn', note: 'The home receiver: walnut cheeks, brushed aluminium, a backlit glass dial, knurled knobs and keys that travel. Always dark: light palettes switch to Autumn.' },
+    { id: 'riot', name: 'Riot', theme: 'carnival', note: 'More is more: clashing patterns, three colours at once, oversized mixed type, sticker labels and stacked shadows. Best with Carnival.' },
     { id: 'bento', name: 'Bento', theme: 'porcelain', note: 'The toy box: chunky pastel blocks, pill buttons that press down, giant rounded numbers. Best with Porcelain.' },
     { id: 'folio', name: 'Folio', theme: 'swiss', note: 'The broadsheet: a masthead and numbered index, enormous serif headlines, rules instead of boxes. Best with Swiss Red.' },
     { id: 'terminal', name: 'Terminal', theme: 'neon', note: 'The tty: monospace everything, framed panes with their names in the border, numbered windows. Always dark: light palettes switch to Neon Grid.' },
     { id: 'brut', name: 'Brut', theme: 'chrome', note: 'The poster: thick ink, blocks that share borders, giant capitals and hard shadows. Best with Chrome.' },
     { id: 'ticket', name: 'Ticket', theme: 'mint', note: 'The boarding pass: notched paper stubs, ink stamps and a barcode on the instrument. Best with Mint Studio.' },
-    { id: 'console', name: 'Console', theme: 'ember', note: 'The hi-fi faceplate: brushed panels, keys that travel, a recessed lit display and indicator lights. Always dark: light palettes switch to Ember.' },
   ];
   RS.styleId = () => { const l = RS.store.get('styleid', undefined); const p = (RS.prefs && RS.prefs.style); let v = l != null ? l : (p || 'skywave');
     return STYLES.some(x => x.id === v) ? v : 'skywave'; };
@@ -107,9 +109,9 @@
     const sty = RS.styleId(), sw = sty === 'terminal';
     root.dataset.style = sty; RS.store.set('style', sty);
     if (RS.fitTabs) setTimeout(RS.fitTabs, 60);
-    // Lumen, Console and Terminal are drawn dark (a black canvas, a black faceplate, a CRT). A light palette there would
-    // put dark text on dark surfaces, so they use their own dark palette instead whenever the chosen one is light.
-    const DARK_ONLY = { lumen: 'violet', console: 'ember', terminal: 'neon' };
+    // Terminal (a CRT) and Walnut (a backlit glass dial with lamp-lit readouts) are drawn dark. A light palette there would
+    // wash the readouts out, so each uses its own dark palette instead whenever the chosen one is light.
+    const DARK_ONLY = { terminal: 'neon', walnut: 'autumn' };
     const pick = byId[st.id] || byId[''], devDark = matchMedia('(prefers-color-scheme: dark)').matches;
     const light = st.id === 'custom' ? !st.custom.dark : pick.sys ? (pick.id === 'light' || (pick.id === '' && !devDark)) : !pick.dark;
     RS.darkOnly = DARK_ONLY[sty] ? byId[DARK_ONLY[sty]].name : null;

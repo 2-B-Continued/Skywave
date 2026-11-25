@@ -103,7 +103,7 @@
   function loadScript(src) { return new Promise((res, rej) => { const sc = document.createElement('script'); sc.src = src; sc.onload = res; sc.onerror = rej; document.head.appendChild(sc); }); }
   function startWorker(onPcm) {
     worker = new Worker('/js/audio-net.js' + V);
-    worker.onmessage = e => { const d = e.data; if (d && d.t === 'pcm') onPcm(d); else onNet(d); };
+    worker.onmessage = e => { const d = e.data; if (d && (d.t === 'pcm' || d.t === 'new')) onPcm(d); else onNet(d); };
   }
   function graph() {
     if (ready) return ready;
@@ -128,7 +128,7 @@
         sp.onaudioprocess = e => { const o = e.outputBuffer; core.render(o.getChannelData(0), o.numberOfChannels > 1 ? o.getChannelData(1) : o.getChannelData(0)); };
         sp.connect(gainN);
         node = { port: { postMessage: m => core.msg(m.t === 'target' ? { t: 'target', v: pageTarget() } : m) } };
-        startWorker(d => core.push(d.b, d.s));
+        startWorker(d => d.t === 'new' ? core.msg(d) : core.push(d.b, d.s));
         A.engine = 'page';
         return true;
       });

@@ -121,7 +121,7 @@
   new MutationObserver(() => { setTimeout(() => { nestAll(); glideAll(); }, 140); }).observe(root, { attributes: true, attributeFilter: ['data-style', 'data-theme'] });
 
   // ---------------------------------------------------------------- layout family per style (styles.css): the "rack" puts the station list beside the instrument
-  const RACK = new Set(['classic', 'lumen', 'terminal', 'console', 'ticket', 'brut', 'bento']);
+  const RACK = new Set(['terminal', 'ticket', 'brut', 'bento', 'walnut', 'relief']);
   const layout = () => { const st = root.dataset.style || 'skywave'; if (RACK.has(st)) root.dataset.layout = 'rack'; else delete root.dataset.layout; };
   new MutationObserver(layout).observe(root, { attributes: true, attributeFilter: ['data-style'] }); layout();
 

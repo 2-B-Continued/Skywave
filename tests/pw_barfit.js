@@ -7,7 +7,7 @@ const { chromium } = require('playwright'); const { spawn } = require('child_pro
   await new Promise(r => setTimeout(r, 4000)); const b = await chromium.launch();
   const p = await (await b.newContext({ viewport: { width: 1440, height: 900 } })).newPage();
   await p.goto('http://127.0.0.1:18153/#radio'); await p.waitForTimeout(2500);
-  for (const st of (process.argv[2] || 'skywave,aurora,classic,lumen,bento,folio,terminal,brut,ticket,console').split(',')) {
+  for (const st of (process.argv[2] || 'skywave,depth,relief,walnut,riot,bento,folio,terminal,brut,ticket').split(',')) {
     await p.evaluate(s => { RS.store.set('styleid', s); RS.applyTheme(); }, st);
     for (const w of [1920, 1440, 1280, 1100, 900, 800, 768]) {
       await p.setViewportSize({ width: w, height: 900 }); await p.waitForTimeout(250);

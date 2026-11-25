@@ -17,7 +17,7 @@ const { chromium } = require('playwright'); const { spawn } = require('child_pro
   await p.reload(); await p.waitForTimeout(2500);
   chk('choice kept after setup + reload', await p.evaluate(() => document.documentElement.dataset.palette) === 'violet');
   chk('wizard not shown again', !(await p.isVisible('#sw-look')));
-  for (const sty of ['skywave', 'classic']) for (const t of ['obsidian', 'swiss', 'violet', 'mint']) {
+  for (const sty of ['skywave', 'relief']) for (const t of ['obsidian', 'swiss', 'violet', 'mint']) {
     await p.evaluate(([s, t]) => { RS.setStyle(s); RS.setTheme(t); }, [sty, t]); await p.waitForTimeout(300);
     const r = await p.evaluate(() => { const cs = getComputedStyle(document.documentElement); return { ink: cs.getPropertyValue('--ink').trim(), panel: cs.getPropertyValue('--panel').trim(), pal: document.documentElement.dataset.palette }; });
     chk(sty + '/' + t + ' readable', RSc(r.ink, r.panel) >= 7 && r.pal === t, r);

@@ -33,7 +33,6 @@
  "My recordings": "",
  "Save": "",
  "Search": "",
- "Use my location": "",
  "Skip for now": "",
  "Save and start": "",
  "Welcome to Skywave": "",

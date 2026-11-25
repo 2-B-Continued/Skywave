@@ -10,6 +10,9 @@
   RS.$$ = (s, r) => Array.from((r || document).querySelectorAll(s));
   RS.esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const esc = RS.esc;
+  // An Enter press that should act (search, add, save). An Enter that confirms an input-method candidate (Chinese,
+  // Japanese, Korean typing) is not one: isComposing covers most browsers, keyCode 229 covers Safari's event order.
+  RS.isEnter = e => e.key === 'Enter' && !e.isComposing && e.keyCode !== 229;
   RS.store = {
     get(k, d) { try { const v = localStorage.getItem('rs.' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
     set(k, v) { try { localStorage.setItem('rs.' + k, JSON.stringify(v)); } catch (e) { } },
@@ -225,7 +228,10 @@
     const long = String(text).length > 90;
     if (long) { el.classList.add('long'); el.title = 'Tap to read the whole message'; el.setAttribute('role', 'button'); el.tabIndex = 0;
       el.addEventListener('click', () => { el.remove(); RS.showFull(cls === 'bad' ? 'Problem' : 'Message', text); }); }
-    const box = $('#toasts'); box.appendChild(el);
+    const box = $('#toasts');
+    // the same message twice in a row says nothing new: the newer one replaces the older
+    [...box.children].forEach(t => { if (!t._gone && t.textContent === el.textContent) { t._gone = true; t.remove(); } });
+    box.appendChild(el);
     // keep three at most. A leaving toast may still be fading out (its remove() animates first), so count only
     // the ones staying, and ask each one to leave once
     const leave = t => { if (t._gone) return; t._gone = true; t.remove(); };
@@ -234,17 +240,27 @@
     const base = cls === 'bad' ? 9000 : 4500;
     setTimeout(() => leave(el), Math.min(20000, Math.max(base, String(text).length * (cls === 'bad' ? 90 : 60))));
   };
+  // Dialogs are native modal <dialog>s: the browser makes the page behind inert, keeps focus inside, draws them above
+  // everything and puts focus back on the button that opened them. The <dialog> fills the screen and is its own dimmed
+  // backdrop, so the click-outside test is simply "the press landed on the <dialog> itself".
+  let modalSeq = 0;
   RS.modal = (html, opts) => {
     RS.closeModal();
-    const back = document.createElement('div'); back.className = 'modal-back';
-    back.innerHTML = '<div class="modal" role="dialog" aria-modal="true">' + html + '</div>';
+    const back = document.createElement('dialog'); back.className = 'modal-back';
+    back.innerHTML = '<div class="modal">' + html + '</div>';
+    const h = back.querySelector('h1, h2, h3');
+    if (h) { if (!h.id) h.id = 'modal-title-' + (++modalSeq); back.setAttribute('aria-labelledby', h.id); }
     back.addEventListener('mousedown', e => { if (e.target === back) RS.closeModal(); });
+    back.addEventListener('cancel', e => { e.preventDefault(); RS.closeModal(); });     // Esc / back gesture: close with the usual animation
     $('#modal-root').appendChild(back);
+    try { back.showModal(); } catch (e) { back.setAttribute('open', ''); }
     const f = back.querySelector('[autofocus],input,button.primary,button'); if (f) f.focus();
     RS._onclose = opts && opts.onClose;
     return back.firstChild;
   };
-  RS.closeModal = () => { const r = $('#modal-root'); if (r.firstChild) { r.innerHTML = ''; if (RS._onclose) { const f = RS._onclose; RS._onclose = null; f(); } } };
+  // Take a dialog out of the top layer but keep it drawn, so it can animate away after it has really closed.
+  RS.releaseModal = back => { if (back && back.open) { back.classList.add('leaving'); try { back.close(); } catch (e) { back.removeAttribute('open'); } } };
+  RS.closeModal = () => { const r = $('#modal-root'); if (r.firstChild) { RS.releaseModal(r.firstChild); r.replaceChildren(); if (RS._onclose) { const f = RS._onclose; RS._onclose = null; f(); } } };
   document.addEventListener('keydown', e => { if (e.key === 'Escape') RS.closeModal(); });
   RS.confirm = (title, text, yes, fn) => {
     const m = RS.modal('<h2>' + esc(title) + '</h2><p>' + esc(text) + '</p><div class="row" style="justify-content:flex-end;margin-top:14px"><button class="btn" data-act="closeModal">Cancel</button><button class="btn primary" id="cf-yes">' + esc(yes) + '</button></div>');
@@ -344,15 +360,16 @@
     h += '<button data-act="moreMenu">' + RS.icon('more') + 'More</button>';
     m.innerHTML = h;
   }
-  // When the tabs don't fit, the less-used ones show their icon only (the name stays as a tooltip), then every tab but
-  // the open one. Measured, so each style keeps its full labels whenever there is room.
+  // Every tab always shows its icon and its full name. When they don't fit on one line, the bar wraps onto a second
+  // line rather than dropping or shrinking any of them. Measured, so the bar stays on one line whenever there is room.
   function fitTabs() {
     const t = $('#tabs'); if (!t || !t.offsetParent) return;
-    t.classList.remove('fit1', 'fit2', 'fit3');
-    const ic = t.querySelector('.tab svg');
-    t.classList.toggle('noicons', !ic || getComputedStyle(ic).display === 'none');   // word-only styles shrink the words instead
-    const over = () => t.scrollWidth > t.clientWidth + 1 || t.getBoundingClientRect().right > window.innerWidth + 1;
-    ['fit1', 'fit2', 'fit3'].forEach(c => { if (over()) t.classList.add(c); });
+    t.classList.remove('wrap');
+    const tabs = t.querySelectorAll('.tab'), first = tabs[0], last = tabs[tabs.length - 1];
+    const over = () => t.scrollWidth > t.clientWidth + 1 || t.getBoundingClientRect().right > window.innerWidth + 1 ||
+      (first && last && last.offsetTop > first.offsetTop + first.offsetHeight / 2);    // already running onto a second line
+    if (over()) t.classList.add('wrap');
+    document.documentElement.style.setProperty('--tabs-h', t.offsetHeight + 'px');   // styles that dock the tabs make room for them
   }
   RS.fitTabs = fitTabs;
   let fitT = 0;

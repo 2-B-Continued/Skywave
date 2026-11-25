@@ -68,9 +68,37 @@ def free_port():
     return p
 
 
-def explain_failure(lines):
-    """Turn rtl_tcp's stderr into a sentence a beginner can act on."""
+def remote_addr(remote, default_port=1234):
+    """'host:port' (or '[ipv6]:port', or just 'host') of an rtl_tcp server -> (host, port)."""
+    remote = str(remote or "").strip()
+    if remote.startswith("["):
+        host, _, rest = remote[1:].partition("]")
+        port = rest.lstrip(":")
+    elif remote.count(":") > 1:                       # a bare IPv6 address, no port
+        host, port = remote, ""
+    else:
+        host, _, port = remote.partition(":")
+    try:
+        return host, int(port) if port else default_port
+    except ValueError:
+        return host, default_port
+
+
+def remote_device(remote):
+    """How rtl_433 names a remote rtl_tcp server: rtl_tcp:host:port (IPv6 addresses in brackets)."""
+    host, port = remote_addr(remote)
+    return "rtl_tcp:%s:%d" % ("[%s]" % host if ":" in host else host, port)
+
+
+def explain_failure(lines, remote=None):
+    """Turn rtl_tcp's (or rtl_433's) stderr into a sentence a beginner can act on. remote: the rtl_tcp server in use,
+    if the radio is on another computer: then USB advice would be wrong, and a connection problem is the likely cause."""
     text = "\n".join(lines).lower()
+    if remote:
+        if any(k in text for k in ("connect", "refused", "unreachable", "timed out", "resolve", "rtl_tcp", "no route", "host")):
+            return ("Could not use the radio server at %s. Check rtl_tcp is running there and reachable from this computer, "
+                    "and that no other program is connected to it: rtl_tcp serves one program at a time." % remote)
+        return "The radio could not be started on the radio server at %s. " % remote + (lines[-1] if lines else "No details were reported.")
     if "no supported devices" in text or "no rtl-sdr" in text or "no device" in text:
         return ("No radio dongle found. Check it is plugged in, try another USB port, and make sure the container "
                 "can see USB devices (privileged mode and the /dev/bus/usb mount).")
@@ -106,8 +134,7 @@ class RtlTcpSource:
         self.info_lines = []
         cmd = rtl_tcp_cmd or os.environ.get("RTL_TCP_BIN", "rtl_tcp")
         if remote:
-            host, _, port = remote.partition(":")
-            addr = (host, int(port or 1234))
+            addr = remote_addr(remote)
         else:
             port = free_port()
             addr = ("127.0.0.1", port)

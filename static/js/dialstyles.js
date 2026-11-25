@@ -11,7 +11,7 @@
   RS.dsCols = () => {
     const v = n => RS.cssv(n);
     const glass = v('--glass') || '#101820', ink = v('--glass-ink') || '#c8d4d8', sig = v('--amber') || '#ffb52e', acc = v('--teal') || '#6fd0dc';
-    return { glass: glass, ink: ink, sig: sig, acc: acc, dark: lum(glass) < 0.5, paper: v('--panel') || '#fff', text: v('--ink') || '#111' };
+    return { glass: glass, ink: ink, sig: sig, acc: acc, hot: v('--hot-c') || sig, dark: lum(glass) < 0.5, paper: v('--panel') || '#fff', text: v('--ink') || '#111' };
   };
   const label = (f, major) => {
     if (f < 2e6) return (f / 1e3).toFixed(major < 1e3 ? 1 : 0);
@@ -20,56 +20,6 @@
   const stLabel = f => (f >= 1e6 ? (f / 1e6).toFixed(f % 1e5 === 0 ? 1 : 3) : (f / 1e3).toFixed(0));
   const ticks = (c, fn) => { for (let f = Math.ceil(c.lo / c.major) * c.major; f <= c.hi; f += c.major) fn(f, (f - c.lo) * c.pxHz); };
   const minors = (c, x, fn) => { for (let k = 1; k < c.minorN; k++) fn(x + k * c.major / c.minorN * c.pxHz, k); };
-
-  /* ------------------------------------------------------------------ LUMEN: dots, orbs, glow. No lines at all */
-  DS.lumen = {
-    dial(c) {
-      const g = c.g, w = c.w, h = c.h, k = c.col, mid = w / 2;
-      // soft light pool behind the playhead
-      const pool = g.createRadialGradient(mid, h * .55, 0, mid, h * .55, Math.max(90, c.bw * 1.4));
-      pool.addColorStop(0, rgba(k.sig, .30)); pool.addColorStop(1, rgba(k.sig, 0)); g.fillStyle = pool; g.fillRect(0, 0, w, h);
-      if (c.live) { g.beginPath(); c.liveLine(g, 74, 40); g.lineTo(c.liveEnd, 74); g.closePath(); const gr = g.createLinearGradient(0, 30, 0, 74); gr.addColorStop(0, rgba(k.sig, .35)); gr.addColorStop(1, rgba(k.sig, 0)); g.fillStyle = gr; g.fill(); }
-      // ruler made of dots
-      g.textAlign = 'center'; g.font = '500 12px Inter, sans-serif';
-      ticks(c, (f, x) => {
-        g.fillStyle = k.ink; g.beginPath(); g.arc(x, h - 30, 2.6, 0, TAU); g.fill();
-        g.fillStyle = rgba(k.ink, .85); g.fillText(label(f, c.major), x, h - 12);
-        minors(c, x, xm => { g.fillStyle = rgba(k.ink, .38); g.beginPath(); g.arc(xm, h - 30, 1.1, 0, TAU); g.fill(); });
-      });
-      // stations are glowing orbs, bigger when stronger
-      let last = -99;
-      c.mk.forEach(p => {
-        const x = (p.f - c.lo) * c.pxHz, r = 4 + Math.min(p.db, 40) / 40 * 5, y = 34 + (1 - Math.min(p.db, 40) / 40) * 14, col = p.kind === 'fav' ? '#ffffff' : k.acc;
-        const rg = g.createRadialGradient(x, y, 0, x, y, r * 3); rg.addColorStop(0, rgba(col, .55)); rg.addColorStop(1, rgba(col, 0)); g.fillStyle = rg; g.fillRect(x - r * 3, y - r * 3, r * 6, r * 6);
-        g.fillStyle = col; g.beginPath(); g.arc(x, y, r * .55, 0, TAU); g.fill();
-        if (x - last > 52 && x > 20 && x < w - 20) { last = x; g.fillStyle = k.ink; g.font = '500 11px Inter, sans-serif'; g.textAlign = 'center'; g.fillText(stLabel(p.f), x, y - r - 6); }
-      });
-      // playhead: a thread of light ending in a bead
-      const lg = g.createLinearGradient(0, 0, 0, h); lg.addColorStop(0, rgba(k.sig, 1)); lg.addColorStop(1, rgba(k.sig, 0));
-      g.fillStyle = lg; g.fillRect(mid - 1, 0, 2, h);
-      g.shadowColor = k.sig; g.shadowBlur = 16; g.fillStyle = '#fff'; g.beginPath(); g.arc(mid, 9, 6, 0, TAU); g.fill(); g.shadowBlur = 0;
-      g.fillStyle = k.sig; g.beginPath(); g.arc(mid, 9, 3, 0, TAU); g.fill();
-    },
-    ov(c) {
-      const g = c.g, w = c.w, h = c.h, k = c.col;
-      g.fillStyle = rgba(k.ink, .35); for (let x = 3; x < w; x += 9) { g.beginPath(); g.arc(x, h - 5, 1, 0, TAU); g.fill(); }
-      if (c.plan.length) c.plan.forEach(p => { g.fillStyle = rgba(k.acc, .55); g.beginPath(); g.arc((p.x0 + p.x1) / 2, h / 2, Math.max(2, Math.min(7, (p.x1 - p.x0) / 4)), 0, TAU); g.fill(); });
-      else if (c.series) { g.beginPath(); g.moveTo(0, h); c.series.forEach(s => g.lineTo(s.x, h - 4 - s.t * (h - 12))); g.lineTo(w, h); const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, rgba(k.acc, .6)); gr.addColorStop(1, rgba(k.acc, 0)); g.fillStyle = gr; g.fill(); g.lineJoin = 'round'; g.strokeStyle = k.acc; g.lineWidth = 1.5; g.beginPath(); c.series.forEach((s, i) => { const y = h - 4 - s.t * (h - 12); i ? g.lineTo(s.x, y) : g.moveTo(s.x, y); }); g.stroke(); }
-      else c.hintText(g, k.ink);
-      c.peaks.forEach(x => { g.fillStyle = k.acc; g.beginPath(); g.arc(x, 6, 2.4, 0, TAU); g.fill(); });
-      c.favs.forEach(x => { g.fillStyle = '#fff'; g.beginPath(); g.arc(x, 6, 3.2, 0, TAU); g.fill(); });
-      g.fillStyle = rgba(k.sig, .16); g.beginPath(); g.ellipse((c.x0 + c.x1) / 2, h / 2, Math.max(6, (c.x1 - c.x0) / 2 + 4), h / 2 - 2, 0, 0, TAU); g.fill();
-      g.shadowColor = k.sig; g.shadowBlur = 10; g.fillStyle = k.sig; g.beginPath(); g.arc(c.xv, h / 2, 5, 0, TAU); g.fill(); g.shadowBlur = 0;
-    },
-    spec(c) {            // smooth glowing hill, dotted baseline
-      const g = c.g, w = c.w, h = c.h, k = c.col;
-      g.fillStyle = rgba(k.ink, .3); for (let x = 4; x < w; x += 10) { g.beginPath(); g.arc(x, h - 3, 1, 0, TAU); g.fill(); }
-      const path = arr => { g.beginPath(); for (let i = 0; i < 1024; i += 4) { const x = i / 1023 * w, y = c.Y(arr[i]); i ? g.lineTo(x, y) : g.moveTo(x, y); } };
-      path(c.cur); g.lineTo(w, h); g.lineTo(0, h); g.closePath(); const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, rgba(c.D.trace, .5)); gr.addColorStop(1, rgba(c.D.trace, 0)); g.fillStyle = gr; g.fill();
-      g.shadowColor = c.D.trace; g.shadowBlur = 8; g.strokeStyle = c.D.trace; g.lineWidth = 1.6; g.lineJoin = 'round'; path(c.cur); g.stroke(); g.shadowBlur = 0;
-      if (c.mx) { g.strokeStyle = '#ff6b6b99'; path(c.mx); g.stroke(); } if (c.pk) { g.strokeStyle = '#7ee0ffaa'; path(c.pk); g.stroke(); }
-    },
-  };
 
   /* ------------------------------------------------------------------ BENTO: solid blocks, a chunky knob, bar-graph meters */
   DS.bento = {
@@ -170,15 +120,16 @@
     },
   };
 
-  /* ------------------------------------------------------------------ AURORA: the scale bends. Curved ruler, light beams, corner brackets */
-  DS.aurora = {
+  /* ------------------------------------------------------------------ DEPTH: the scale curves away at the edges, as if it wrapped
+     around you; stations are beams of light rising from it and the needle is a lens */
+  DS.depth = {
     dial(c) {
       const g = c.g, w = c.w, h = c.h, k = c.col, mid = w / 2, base = h - 10;
       const bow = x => { const u = (x - mid) / (w / 2); return u * u * 14; };           // y drops away from the centre
       if (c.live) { g.beginPath(); let st = false; c.liveLine(g, null, 46, false, (x, y) => { const yy = y - bow(x) * .6; st ? g.lineTo(x, yy) : g.moveTo(x, yy); st = true; }); g.strokeStyle = rgba(k.sig, .55); g.lineWidth = 1; g.stroke(); }
       // the curve itself, then radial ticks leaning toward the centre
       g.strokeStyle = rgba(k.ink, .6); g.lineWidth = 1; g.beginPath(); for (let x = 0; x <= w; x += 6) { const y = base - 34 + bow(x); x ? g.lineTo(x, y) : g.moveTo(x, y); } g.stroke();
-      g.textAlign = 'center'; g.font = '500 11px "Geist Mono", monospace';
+      g.textAlign = 'center'; g.font = '500 11px "V Inter", Inter, sans-serif';
       ticks(c, (f, x) => {
         const y = base - 34 + bow(x), lean = (x - mid) / (w / 2) * 6;
         g.strokeStyle = k.ink; g.lineWidth = 1.2; g.beginPath(); g.moveTo(x, y); g.lineTo(x - lean, y + 12); g.stroke();
@@ -191,7 +142,7 @@
         const x = (p.f - c.lo) * c.pxHz, y0 = base - 34 + bow(x), len = 18 + Math.min(p.db, 40) * 1.0, col = p.kind === 'fav' ? '#ffffff' : k.acc;
         const lg = g.createLinearGradient(0, y0, 0, y0 - len); lg.addColorStop(0, rgba(col, .9)); lg.addColorStop(1, rgba(col, 0)); g.strokeStyle = lg; g.lineWidth = 1.5; g.beginPath(); g.moveTo(x, y0); g.lineTo(x, y0 - len); g.stroke();
         g.strokeStyle = col; g.lineWidth = 1; g.beginPath(); g.moveTo(x - 3, y0 - len * .55); g.lineTo(x + 3, y0 - len * .55); g.moveTo(x, y0 - len * .55 - 3); g.lineTo(x, y0 - len * .55 + 3); g.stroke();
-        if (x - last > 60 && x > 22 && x < w - 22) { last = x; g.fillStyle = k.ink; g.font = '500 10px "Geist Mono", monospace'; g.fillText(stLabel(p.f), x, y0 - len - 5); g.font = '500 11px "Geist Mono", monospace'; }
+        if (x - last > 60 && x > 22 && x < w - 22) { last = x; g.fillStyle = k.ink; g.font = '500 10px "V Inter", Inter, sans-serif'; g.fillText(stLabel(p.f), x, y0 - len - 5); g.font = '500 11px "V Inter", Inter, sans-serif'; }
       });
       // the lens: a vertical sweep of light plus a ring where it meets the curve; channel as a faint cone
       const cone = g.createLinearGradient(0, 0, 0, h); cone.addColorStop(0, rgba(k.sig, 0)); cone.addColorStop(1, rgba(k.sig, .22)); g.fillStyle = cone; g.fillRect(mid - Math.max(4, c.bw) / 2, 0, Math.max(4, c.bw), h);
@@ -228,7 +179,7 @@
       const pill = (x, y, ww, hh) => { const r = hh / 2; g.beginPath(); g.moveTo(x + r, y); g.lineTo(x + ww - r, y); g.arc(x + ww - r, y + r, r, -Math.PI / 2, Math.PI / 2); g.lineTo(x + r, y + hh); g.arc(x + r, y + r, r, Math.PI / 2, Math.PI * 1.5); g.closePath(); };
       if (c.live) { g.beginPath(); c.liveLine(g, base, 44); g.lineTo(c.liveEnd, base); g.closePath(); g.fillStyle = rgba(k.acc, .14); g.fill(); g.beginPath(); c.liveLine(g, base, 44); g.strokeStyle = rgba(k.acc, .55); g.lineWidth = 1; g.stroke(); }
       g.fillStyle = rgba(k.ink, .35); g.fillRect(0, base, w, 1);
-      g.textAlign = 'center'; g.font = '500 12px "Lumen Inter", Inter, sans-serif';
+      g.textAlign = 'center'; g.font = '500 12px "V Inter", Inter, sans-serif';
       ticks(c, (f, x) => {
         g.fillStyle = rgba(k.ink, .9); g.fillRect(Math.round(x), base, 1, 9);
         g.fillText(label(f, c.major), x, base + 23);
@@ -238,7 +189,7 @@
       c.mk.forEach(p => {
         const x = (p.f - c.lo) * c.pxHz, s = Math.min(p.db, 40) / 40, hh = 6 + s * 16, col = p.kind === 'fav' ? k.sig : k.acc;
         g.fillStyle = rgba(col, .85); pill(x - 2.5, base - 4 - hh, 5, hh); g.fill();
-        if (x - last > 54 && x > 22 && x < w - 22) { last = x; g.fillStyle = rgba(k.ink, .95); g.font = '500 11px "Lumen Inter", Inter, sans-serif'; g.fillText(stLabel(p.f), x, base - 10 - hh); g.font = '500 12px "Lumen Inter", Inter, sans-serif'; }
+        if (x - last > 54 && x > 22 && x < w - 22) { last = x; g.fillStyle = rgba(k.ink, .95); g.font = '500 11px "V Inter", Inter, sans-serif'; g.fillText(stLabel(p.f), x, base - 10 - hh); g.font = '500 12px "V Inter", Inter, sans-serif'; }
       });
       const bw = Math.max(4, c.bw);
       g.fillStyle = rgba(k.sig, .14); g.fillRect(mid - bw / 2, 0, bw, base);
@@ -266,8 +217,8 @@
     },
   };
 
-  /* ------------------------------------------------------------------ CLASSIC: a slide-rule scale behind glass, a thick pointer and a flag */
-  DS.classic = {
+  /* ------------------------------------------------------------------ TICKET: a slide-rule scale behind glass, a thick pointer and a flag */
+  DS.ticket = {
     dial(c) {
       const g = c.g, w = c.w, h = c.h, k = c.col, mid = w / 2;
       g.fillStyle = rgba(k.ink, .08); g.fillRect(0, 0, w, h);
@@ -285,6 +236,97 @@
       g.fillStyle = k.sig; g.fillRect(mid - 2, 0, 4, h); g.fillRect(mid - 9, h - 8, 18, 8); g.fillRect(mid - 9, 0, 18, 6);
     },
   };
-  // Brut and Ticket borrow the nearest drawing: blocks for Brut, the classic dial for Ticket; Console keeps the original instrument dial
-  DS.brut = DS.bento; DS.ticket = DS.classic;
+  /* ------------------------------------------------------------------ RELIEF: a soft groove, rounded ticks, a raised pill for the needle */
+  DS.relief = {
+    dial(c) {
+      const g = c.g, w = c.w, h = c.h, k = c.col, mid = w / 2, y = h - 40;
+      const pill = (x, yy, ww, hh) => { const r = Math.min(ww, hh) / 2; g.beginPath(); g.roundRect ? g.roundRect(x, yy, ww, hh, r) : g.rect(x, yy, ww, hh); };
+      if (c.live) { g.beginPath(); c.liveLine(g, y - 8, 40); g.lineTo(c.liveEnd, y - 8); g.closePath(); g.fillStyle = rgba(k.acc, .12); g.fill(); }
+      // the groove: a darker channel with a light lower lip
+      g.fillStyle = rgba('#000000', .35); pill(0, y - 3, w, 8); g.fill();
+      g.fillStyle = rgba(k.ink, .10); g.fillRect(0, y + 5, w, 1);
+      g.textAlign = 'center'; g.font = '600 11.5px "V Inter", Inter, sans-serif';
+      ticks(c, (f, x) => {
+        g.fillStyle = rgba(k.ink, .85); pill(x - 2, y + 12, 4, 12); g.fill();
+        g.fillText(label(f, c.major), x, y + 38);
+        minors(c, x, xm => { g.fillStyle = rgba(k.ink, .35); g.beginPath(); g.arc(xm, y + 16, 1.6, 0, TAU); g.fill(); });
+      });
+      let last = -99;
+      c.mk.forEach(p => {
+        const x = (p.f - c.lo) * c.pxHz, s2 = Math.min(p.db, 40) / 40, r = 3 + s2 * 3, col = p.kind === 'fav' ? k.sig : k.acc;
+        g.fillStyle = rgba(col, .25); g.beginPath(); g.arc(x, y - 20, r + 4, 0, TAU); g.fill();
+        g.fillStyle = col; g.beginPath(); g.arc(x, y - 20, r, 0, TAU); g.fill();
+        if (x - last > 54 && x > 22 && x < w - 22) { last = x; g.fillStyle = rgba(k.ink, .9); g.font = '600 11px "V Inter", Inter, sans-serif'; g.fillText(stLabel(p.f), x, y - 32 - r); g.font = '600 11.5px "V Inter", Inter, sans-serif'; }
+      });
+      const bw = Math.max(6, c.bw);
+      g.fillStyle = rgba(k.sig, .14); pill(mid - bw / 2, 4, bw, y - 4); g.fill();
+      // the needle: a raised pill with a soft shadow below and a highlight on its top edge
+      g.shadowColor = 'rgba(0,0,0,.55)'; g.shadowBlur = 10; g.shadowOffsetY = 3;
+      g.fillStyle = k.sig; pill(mid - 5, 6, 10, y + 4); g.fill();
+      g.shadowColor = 'transparent'; g.shadowBlur = 0; g.shadowOffsetY = 0;
+      g.fillStyle = 'rgba(255,255,255,.45)'; pill(mid - 3, 9, 6, 3); g.fill();
+    },
+  };
+
+  /* ------------------------------------------------------------------ WALNUT: a backlit glass scale printed in two rows, a red needle */
+  DS.walnut = {
+    dial(c) {
+      const g = c.g, w = c.w, h = c.h, k = c.col, mid = w / 2, top = 26, bot = h - 26;
+      // the lamp behind the glass: warm in the middle, falling off to the ends
+      const lamp = g.createLinearGradient(0, 0, w, 0); lamp.addColorStop(0, 'rgba(255,170,70,.04)'); lamp.addColorStop(.5, 'rgba(255,180,90,.16)'); lamp.addColorStop(1, 'rgba(255,170,70,.04)');
+      g.fillStyle = lamp; g.fillRect(0, 0, w, h);
+      const print = '#ffe8c4';
+      g.strokeStyle = rgba(print, .75); g.lineWidth = 1; g.beginPath(); g.moveTo(0, top + .5); g.lineTo(w, top + .5); g.moveTo(0, bot + .5); g.lineTo(w, bot + .5); g.stroke();
+      if (c.live) { g.beginPath(); c.liveLine(g, bot - 1, 40); g.strokeStyle = rgba(k.sig, .55); g.stroke(); }
+      g.textAlign = 'center'; g.font = '600 12px "V Sans", sans-serif';
+      ticks(c, (f, x) => {
+        g.strokeStyle = print; g.lineWidth = 1.5; g.beginPath(); g.moveTo(x, top); g.lineTo(x, top + 14); g.moveTo(x, bot); g.lineTo(x, bot - 10); g.stroke();
+        g.fillStyle = print; g.fillText(label(f, c.major), x, top + 30);
+        minors(c, x, xm => { g.lineWidth = 1; g.strokeStyle = rgba(print, .55); g.beginPath(); g.moveTo(xm, top); g.lineTo(xm, top + 6); g.stroke(); });
+      });
+      let last = -99;
+      c.mk.forEach(p => {
+        const x = (p.f - c.lo) * c.pxHz; g.fillStyle = p.kind === 'fav' ? '#ffd27a' : rgba(print, .9); g.beginPath(); g.arc(x, bot - 16, p.kind === 'fav' ? 3.5 : 2.5, 0, TAU); g.fill();
+        if (x - last > 54 && x > 20 && x < w - 20) { last = x; g.fillStyle = rgba(print, .8); g.font = '500 10.5px "V Sans", sans-serif'; g.fillText(stLabel(p.f), x, h - 8); g.font = '600 12px "V Sans", sans-serif'; }
+      });
+      // the needle: a thin red pointer that casts a shadow on the printed glass
+      const bw = Math.max(3, c.bw); g.fillStyle = 'rgba(255,180,90,.12)'; g.fillRect(mid - bw / 2, 0, bw, h);
+      g.fillStyle = 'rgba(0,0,0,.45)'; g.fillRect(mid + 2, 4, 3, h - 8);
+      g.fillStyle = '#e8402a'; g.fillRect(mid - 1.5, 2, 3, h - 4);
+      g.fillStyle = 'rgba(255,255,255,.35)'; g.fillRect(mid - 1.5, 2, 1, h - 4);
+    },
+  };
+
+  /* ------------------------------------------------------------------ RIOT: ticks in three colours, stations as stars, a fat striped needle */
+  DS.riot = {
+    dial(c) {
+      const g = c.g, w = c.w, h = c.h, k = c.col, mid = w / 2, y = h - 34, cols = [k.acc, k.sig, k.hot || k.acc];
+      if (c.live) { g.beginPath(); c.liveLine(g, y, 44); g.lineTo(c.liveEnd, y); g.closePath(); g.fillStyle = rgba(k.hot || k.acc, .22); g.fill(); }
+      g.fillStyle = k.ink; g.fillRect(0, y, w, 3);
+      g.textAlign = 'center'; g.font = '800 12.5px "V Bricolage", sans-serif';
+      let n = 0;
+      ticks(c, (f, x) => {
+        const col = cols[n++ % 3]; g.fillStyle = col; g.fillRect(x - 3, y - 6, 6, 18);
+        g.fillStyle = k.ink; g.fillText(label(f, c.major), x, y + 30);
+        minors(c, x, (xm, i) => { g.fillStyle = cols[(n + i) % 3]; g.beginPath(); g.arc(xm, y + 6, 2.4, 0, TAU); g.fill(); });
+      });
+      const star = (x, yy, r, col) => { g.beginPath(); for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r * .45 : r; g.lineTo(x + Math.cos(a) * rr, yy + Math.sin(a) * rr); } g.closePath(); g.fillStyle = col; g.fill(); };
+      let last = -99, m = 0;
+      c.mk.forEach(p => {
+        const x = (p.f - c.lo) * c.pxHz, r = 5 + Math.min(p.db, 40) / 40 * 5;
+        star(x, y - 22, r, p.kind === 'fav' ? k.sig : cols[m++ % 3]);
+        if (x - last > 56 && x > 22 && x < w - 22) { last = x; g.fillStyle = k.ink; g.font = '800 11px "V Bricolage", sans-serif'; g.fillText(stLabel(p.f), x, y - 30 - r); g.font = '800 12.5px "V Bricolage", sans-serif'; }
+      });
+      const bw = Math.max(8, c.bw); g.fillStyle = rgba(k.sig, .2); g.fillRect(mid - bw / 2, 0, bw, h);
+      // the needle: diagonal stripes in the accent and signal colours, outlined in ink
+      g.save(); g.beginPath(); g.rect(mid - 6, 2, 12, h - 4); g.clip();
+      for (let yy = -12; yy < h + 12; yy += 12) { g.fillStyle = (yy / 12) % 2 ? k.acc : k.sig; g.beginPath(); g.moveTo(mid - 8, yy); g.lineTo(mid + 8, yy - 8); g.lineTo(mid + 8, yy + 4); g.lineTo(mid - 8, yy + 12); g.closePath(); g.fill(); }
+      g.restore(); g.strokeStyle = k.ink; g.lineWidth = 2; g.strokeRect(mid - 6, 2, 12, h - 4);
+    },
+  };
+
+  // Brut borrows Bento's blocks. The band strip and spectrum: Relief and Walnut use the plain ones, Riot Bento's chunky bars
+  DS.brut = DS.bento;
+  DS.relief.ov = DS.walnut.ov = DS.skywave.ov; DS.relief.spec = DS.walnut.spec = DS.skywave.spec;
+  DS.riot.ov = DS.bento.ov; DS.riot.spec = DS.bento.spec;
 })();

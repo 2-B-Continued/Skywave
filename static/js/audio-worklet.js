@@ -13,7 +13,10 @@
      minute or so (a busy computer, Wi-Fi scanning for networks) is covered for good instead of breaking the sound each
      time it comes back.
    - Far behind (a long stall followed by a flood): skip ahead to the target with a short crossfade, so the sound is never late.
-   - Retune: "flush" fades the old station out in 8 ms and starts clean, so tuning sounds instant.
+   - Retune: "flush" (sent the moment you tune) fades the old station out within one block and starts clean. The server
+     then marks where the new station's sound begins ("new"): anything of the old station still arriving before it is
+     dropped, and the new sound starts as soon as the cushion asked for (60 to 90 ms by default) is there, even when the
+     cushion has grown after earlier drop-outs. The grown cushion then builds back up gently while it plays.
 
    Input: 48 kHz 16-bit mono or interleaved stereo frames, arriving on a MessagePort straight from the network worker
    (audio-net.js), so a busy page never sits between the network and the speaker. Output: stereo at the sound card's rate
@@ -36,6 +39,7 @@ class SkywaveCore {
     this.playing = false;
     this.g = 0;                                         // fade gain
     this.cut = false;                                   // a retune: fade out, then clear
+    this.quick = false;                                 // after a retune: start on the asked-for cushion, not the grown one
     this.under = 0; this.skips = 0; this.calm = 0; this.frames = 0;
     this.level = 0; this.statN = 0; this.rate = 1;
   }
@@ -43,7 +47,7 @@ class SkywaveCore {
   msg(d) {
     if (!d) return;
     if (d.t === 'pcm') this.push(d.b, d.s);
-    else if (d.t === 'flush') this.cut = true;
+    else if (d.t === 'flush' || d.t === 'new') { this.cut = true; this.cutAt = this.w; this.quick = true; }   // keep what arrives after this
     else if (d.t === 'target') { this.base = Math.max(0.04, Math.min(1.2, +d.v || 0.15)); this.target = Math.max(this.base, Math.min(this.target, this.base * 2)); }
   }
 
@@ -124,13 +128,14 @@ class SkywaveCore {
         oL[i] = L[j] * g; oR[i] = R[j] * g;
         if (this.n > 1) { this.ri = (this.ri + 1) % cap; this.n--; }
       }
-      this.cut = false; this.playing = false; this.g = 0; this.ri = this.w; this.n = 0; this.rf = 0;
+      // everything before the cut goes; sound that arrived after it (the new station) is kept
+      this.cut = false; this.playing = false; this.g = 0; this.ri = this.cutAt; this.n = (this.w - this.cutAt + cap) % cap; this.rf = 0;
       return this.stat(0, true);
     }
 
     const buffered = this.n / this.inRate;
     if (!this.playing) {
-      if (buffered >= this.target) { this.playing = true; this.g = 0; }
+      if (buffered >= (this.quick ? Math.min(this.target, this.base) : this.target)) { this.playing = true; this.g = 0; this.quick = false; }
       else { oL.fill(0); if (oR !== oL) oR.fill(0); return this.stat(0, true); }
     }
 

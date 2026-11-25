@@ -19,7 +19,6 @@ services:
     restart: unless-stopped
     ports:
       - "8073:8073"
-      - "8074:8074"             # the same page over https. Phones only give the compass and motion sensors to https pages
       - "7356:7356"             # remote control for Gpredict, rig-remote and scripts (off until you turn it on in Lab > Network)
     extra_hosts:
       - "host.docker.internal:host-gateway"     # makes the name work on Linux too

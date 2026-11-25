@@ -7,7 +7,7 @@ const { chromium } = require('playwright'); const { spawn } = require('child_pro
   {name:'Bragtown',area:'Durham County',admin:'North Carolina',postcode:'27704',country:'United States',cc:'US',lat:36.04,lon:-78.88,region:'us',tz:'America/New_York'}];
  for (const w of [1280,390]) {
   const p=await (await b.newContext({viewport:{width:w,height:900},hasTouch:w<500})).newPage(); const errs=[]; p.on('pageerror',e=>errs.push(e.message));
-  await p.route('**/api/geocode**', r=>r.fulfill({status:200,contentType:'application/json',body:JSON.stringify({results:R})}));
+  const asked=[]; await p.route('**/api/geocode**', r=>{ asked.push(r.request().url()); r.fulfill({status:200,contentType:'application/json',body:JSON.stringify({results:R})}); });
   await p.goto('http://127.0.0.1:18192/#settings'); await p.waitForTimeout(2500);
   const id=await p.evaluate(()=>document.querySelector('.locp input[type=search]').id.replace(/-q$/,''));
   await p.fill('#'+id+'-q','Durham'); await p.press('#'+id+'-q','Enter'); await p.waitForTimeout(600);
@@ -16,8 +16,16 @@ const { chromium } = require('playwright'); const { spawn } = require('child_pro
   await p.press('#'+id+'-q','ArrowDown'); await p.press('#'+id+'-q','ArrowDown'); await p.press('#'+id+'-q','Enter'); await p.waitForTimeout(400);
   const now=await p.evaluate(id=>({t:document.getElementById(id+'-picked').textContent, open:!document.getElementById(id+'-res').hidden}),id);
   chk(w+'px: arrow keys and Enter pick a place, list closes', /Bragtown/.test(now.t) && !now.open, now);
-  const bar=await p.evaluate(id=>[...document.querySelectorAll('#'+id+'-q, #'+id+'-find, #'+id+'-gps')].map(e=>Math.round(e.getBoundingClientRect().height)),id);
-  chk(w+'px: search field and buttons share one height', new Set(bar).size===1, bar);
+  const bar=await p.evaluate(id=>[...document.querySelectorAll('#'+id+'-q, #'+id+'-find')].map(e=>Math.round(e.getBoundingClientRect().height)),id);
+  chk(w+'px: search field and button share one height', new Set(bar).size===1, bar);
+  chk(w+'px: no "Use my location" button, the place is typed in', !(await p.$('#'+id+'-gps')));
+  // suggestions while typing, without pressing Enter, using the lighter lookup
+  asked.length=0; await p.fill('#'+id+'-q',''); await p.type('#'+id+'-q','Dur',{delay:60}); await p.waitForTimeout(900);
+  const sug=await p.evaluate(id=>({open:!document.getElementById(id+'-res').hidden, rows:document.querySelectorAll('#'+id+'-res .locp-row').length}),id);
+  chk(w+'px: typing three letters shows suggestions', sug.open && sug.rows===2, sug);
+  chk(w+'px: one lookup after the pause, marked as a suggestion', asked.length===1 && /suggest=1/.test(asked[0]), asked);
+  await p.fill('#'+id+'-q','Du'); await p.waitForTimeout(500);
+  chk(w+'px: under three letters the list closes', await p.evaluate(id=>document.getElementById(id+'-res').hidden,id));
   await p.click('#'+id+'-ui'); chk(w+'px: units switch', await p.evaluate(id=>document.getElementById(id+'-ui').getAttribute('aria-pressed')==='true',id));
   chk(w+'px: no page errors', !errs.length, errs.slice(0,3));
  }

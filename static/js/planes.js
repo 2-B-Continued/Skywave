@@ -1,15 +1,16 @@
 /* planes.js - the Planes page.
    A status strip; the map (altitude-coloured planes and trails, labels, your reception range drawn as an outline,
    an altitude legend, the past hour on a replay bar); beside it one panel that is either the list (search, quick
-   filters, sort) or the chosen plane (photo, registration, type, operator and route from adsbdb, every reading, its
-   altitude over the last few minutes, Follow and Show only this). Below: your receiver (aircraft over the past hour,
+   filters, sort) or the chosen plane (photo, registration, model and operator; its flight, route and progress; what
+   its autopilot is set to; every reading; its altitude over the last few minutes; Follow and Show only this). The
+   chosen plane's route is drawn on the map, with the path it has flown so far from the adsb.lol network. Below: your receiver (aircraft over the past hour,
    messages a second, farthest heard, the range chart) and listening to air traffic (air.js).
    Other pages use Pl.list, Pl.sel, Pl.isEmg, Pl.speaking, Pl.spoke, Pl.rows, Pl.update, Pl.alerts and Pl.airUi. */
 (function () {
   'use strict';
   const RS = window.RS, $ = RS.$, esc = RS.esc, icon = RS.icon;
   const Pl = RS.pages.planes = {};
-  Pl.list = []; Pl.live = []; Pl.stats = {}; Pl.sel = null; Pl.t0 = 0; Pl.filterBy = 'all'; Pl.spoke = {}; Pl.info = {}; Pl.replay = null;
+  Pl.list = []; Pl.live = []; Pl.stats = {}; Pl.sel = null; Pl.t0 = 0; Pl.filterBy = 'all'; Pl.spoke = {}; Pl.info = {}; Pl.trace = {}; Pl.replay = null;
   const opt = k => RS.store.get('pl_' + k, { trails: true, labels: true, outline: true }[k]);
   const setOpt = (k, v) => RS.store.set('pl_' + k, v);
 
@@ -21,17 +22,86 @@
   const dist = km => km == null ? '-' : imp() ? (km * 0.6214 < 10 ? (km * 0.6214).toFixed(1) : N(km * 0.6214)) + ' mi' : (km < 10 ? km.toFixed(1) : N(km)) + ' km';
   const DIRS = ['north', 'north-east', 'east', 'south-east', 'south', 'south-west', 'west', 'north-west'];
   const dirOf = b => DIRS[Math.round(((b % 360) + 360) % 360 / 45) % 8];
-  const trend = a => a.vrate == null || Math.abs(a.vrate) < 300 ? '' : a.vrate > 0 ? 'up' : 'down';
+  const trend = a => { const p = phase(a); return p === 'climb' ? 'up' : p === 'descend' ? 'down' : ''; };
   const name = a => a.callsign || a.icao.toUpperCase();
   Pl.isEmg = a => (a.emg && a.emg > 0) || ['7500', '7600', '7700'].includes(a.squawk);
   Pl.speaking = id => Pl.spoke[id] && Date.now() - Pl.spoke[id].t < 45000;
+  // the plane's maker and model: the type table's plain name, then the network's description, then the maker and
+  // variant on record; the broadcast size class only when nothing better is known
+  const modelOf = a => {
+    const ac = (Pl.info[a.icao] || {}).aircraft || {};
+    return RS.acType(ac.icao_type) || ac.description || [ac.manufacturer, ac.type].filter(Boolean).join(' ') || '';
+  };
+  const routeOf = a => { const r = (Pl.info[a.icao] || {}).route; return r && r.origin ? r : null; };   // a route may have only its takeoff airport
+  const apCode = x => (x && (x.iata || x.icao)) || '';
   const typeLine = a => {
-    const i = Pl.info[a.icao], r = i && i.route, ac = i && i.aircraft;
-    const bits = [];
-    if (r && r.origin && r.destination) bits.push((r.origin.iata_code || r.origin.icao_code) + ' to ' + (r.destination.iata_code || r.destination.icao_code));
-    bits.push((ac && (ac.icao_type || ac.type)) || (RS.airline && RS.airline(a.callsign)) || a.cat || (RS.countryOf && RS.countryOf(a.icao)) || 'Aircraft');
+    const r = routeOf(a), bits = [];
+    if (r) bits.push(r.destination ? apCode(r.origin) + ' to ' + apCode(r.destination) : 'From ' + apCode(r.origin));
+    bits.push(modelOf(a) || (RS.airline && RS.airline(a.callsign)) || a.cat || (RS.countryOf && RS.countryOf(a.icao)) || 'Aircraft');
     return bits.join(' · ');
   };
+  // great-circle distance (km) and points along the great circle, for routes and progress
+  const RAD = Math.PI / 180;
+  const gcKm = (la1, lo1, la2, lo2) => { const d = Math.sin((la2 - la1) * RAD / 2) ** 2 + Math.cos(la1 * RAD) * Math.cos(la2 * RAD) * Math.sin((lo2 - lo1) * RAD / 2) ** 2; return 12742 * Math.asin(Math.min(1, Math.sqrt(d))); };
+  function gcPath(la1, lo1, la2, lo2, n) {
+    const p1 = [la1 * RAD, lo1 * RAD], p2 = [la2 * RAD, lo2 * RAD], d = gcKm(la1, lo1, la2, lo2) / 6371, out = [];
+    if (d < 1e-6) return [[la1, lo1], [la2, lo2]];
+    for (let i = 0; i <= n; i++) {
+      const f = i / n, A = Math.sin((1 - f) * d) / Math.sin(d), B = Math.sin(f * d) / Math.sin(d);
+      const x = A * Math.cos(p1[0]) * Math.cos(p1[1]) + B * Math.cos(p2[0]) * Math.cos(p2[1]), y = A * Math.cos(p1[0]) * Math.sin(p1[1]) + B * Math.cos(p2[0]) * Math.sin(p2[1]), z = A * Math.sin(p1[0]) + B * Math.sin(p2[0]);
+      let lon = Math.atan2(y, x) / RAD; if (out.length) { const prev = out[out.length - 1][1]; while (lon - prev > 180) lon -= 360; while (lon - prev < -180) lon += 360; }
+      out.push([Math.atan2(z, Math.hypot(x, y)) / RAD, lon]);
+    }
+    return out;
+  }
+  const hasLL = x => x && x.lat != null && x.lon != null;
+  // how far along its route the plane is, and when it should arrive at its current ground speed
+  function progress(a, r) {
+    if (!r || a.lat == null || !hasLL(r.origin) || !hasLL(r.destination)) return null;
+    const flown = gcKm(r.origin.lat, r.origin.lon, a.lat, a.lon), left = gcKm(a.lat, a.lon, r.destination.lat, r.destination.lon), total = gcKm(r.origin.lat, r.origin.lon, r.destination.lat, r.destination.lon);
+    if (total < 20 || flown + left > total * 1.6) return null;          // too short to be useful, or the plane is nowhere near this route
+    return { flown, left, pct: Math.max(0, Math.min(1, flown / (flown + left))), eta: arrival(a, left) };
+  }
+  // Arrival is worked out from the speed the plane cruises at, not its speed this second, which is far lower while it
+  // climbs out or comes in to land. The cruise speed comes from the flight so far (the high-altitude part of the
+  // network's track) when there is one, otherwise from a typical speed for the kind of aircraft. The last stretch is
+  // flown more slowly, and the answer is rounded to 5 minutes so it doesn't jump about.
+  const PROPS = /^(AT[4-7]|DH8|DHC|SF34|B190|PC12|C208|C30J|C130|JS[0-9]|D228|L410|SW4|BE[0-9]|P68|E110|E120|F50|AN2[46]|Y12|BN2|TBM)/;
+  function cruiseKmh(a) {
+    const t = (Pl.trace[a.icao] || {}).points || [], v = [];
+    for (let i = 1; i < t.length; i++) {
+      const p = t[i - 1], q = t[i], dt = q[0] - p[0];
+      if (p[3] != null && q[3] != null && p[3] > 20000 && q[3] > 20000 && dt >= 30 && dt < 900) v.push(gcKm(p[1], p[2], q[1], q[2]) / dt * 3600);
+    }
+    if (v.length >= 5) { v.sort((x, y) => x - y); const m = v[v.length >> 1]; if (m > 250 && m < 1300) return m; }
+    const ty = String(((Pl.info[a.icao] || {}).aircraft || {}).icao_type || '').toUpperCase();
+    return PROPS.test(ty) ? 480 : /light|glider|rotor|ultra/i.test(a.cat || '') ? 220 : 820;
+  }
+  function arrival(a, left) {
+    if (a.alt != null && a.alt <= 0) return null;                                      // still on the ground
+    const v = cruiseKmh(a), last = Math.min(left, 120);                                // about the last 120 km at roughly half speed
+    const ms = ((left - last) / v + last / (v * 0.55)) * 3600000, step = 300000;
+    return Math.round((Date.now() + ms) / step) * step;
+  }
+  // Where the plane is in its flight. It changes only once the new state has held for a while, so a plane levelling
+  // off for a moment during a climb doesn't make the page flicker between states.
+  const PHASE_HOLD = 20000;
+  function phase(a) {
+    if (!Pl.phase || Object.keys(Pl.phase).length > 400) Pl.phase = {};
+    const vr = a.vrate, alt = a.alt;
+    let now = null;
+    if (alt != null && alt <= 0) now = 'ground';
+    else if (a.sel_alt != null && alt != null && Math.abs(a.sel_alt - alt) > 1500) now = a.sel_alt > alt ? 'climb' : 'descend';
+    else if (vr != null && vr > 700) now = 'climb';
+    else if (vr != null && vr < -700) now = 'descend';
+    else if (vr != null && Math.abs(vr) < 300) now = alt != null && alt > 18000 ? 'cruise' : 'level';
+    const m = Pl.phase[a.icao] || (Pl.phase[a.icao] = { p: now, cand: now, since: Date.now() });
+    if (now == null || now === m.p) { m.cand = m.p; return m.p; }
+    if (now !== m.cand) { m.cand = now; m.since = Date.now(); }
+    if (m.p == null || Date.now() - m.since >= PHASE_HOLD) m.p = now;
+    return m.p;
+  }
+  const countryName = cc => { if (!cc) return ''; try { return new Intl.DisplayNames([RS.lang || 'en', 'en'], { type: 'region' }).of(String(cc).toUpperCase()) || cc; } catch (e) { return cc; } };
 
   // altitude colours, a smooth scale from orange (low) through green and blue to purple (high); grey on the ground
   function altColor(alt, cat) {
@@ -140,7 +210,10 @@
     window.addEventListener('resize', () => { if (RS.page === 'planes') { drawHour(); drawCover(); } });
     const loop = () => { if (RS.page === 'planes') { if (Pl.follow && !Pl.replay) followSel(); mp.loop(); } requestAnimationFrame(loop); }; loop();
     setInterval(() => { if (RS.page === 'planes') { loadHour(); } }, 60000);
-    setInterval(() => { if (RS.page === 'planes' && Pl.sel) detail(); }, 5000);   // "last heard" keeps moving
+    setInterval(() => {                                                    // "last heard" keeps moving; the flight so far refreshes
+      if (RS.page !== 'planes' || !Pl.sel) return; detail();
+      const a = Pl.list.find(x => x.icao === Pl.sel); if (a && !Pl.replay) { info(a).then(detail); loadTrace(a); }
+    }, 5000);
   };
   Pl.enter = () => {
     Pl.t0 = Date.now(); const c = RS.cfg; Pl.home = Pl.home || [c.lat, c.lon];
@@ -202,6 +275,7 @@
     // you
     g.fillStyle = RS.cssv('--pri') || '#0d6e7b'; g.strokeStyle = '#fff'; g.lineWidth = 2.5; g.beginPath(); g.arc(hp.x, hp.y, 6, 0, 7); g.fill(); g.stroke();
     const iso = Pl.isolate && Pl.sel, trails = opt('trails'), labels = opt('labels');
+    drawRoute(g, mp, tiles, ink, halo, font);
     const order = Pl.list.slice().sort((a, b) => (a.icao === Pl.sel) - (b.icao === Pl.sel) || (a.alt || 0) - (b.alt || 0));
     order.forEach(a => {
       if (a.lat == null) return;
@@ -245,13 +319,57 @@
       mp.hit.push({ x: ex, y: ey, item: a });
     });
   }
-  Pl.fitAll = () => {
-    const mp = Pl.map, pts = Pl.list.filter(a => a.lat != null).map(a => [a.lat, a.lon]).concat([Pl.home || [RS.cfg.lat, RS.cfg.lon]]); if (!mp) return;
-    const la = pts.map(x => x[0]), lo = pts.map(x => x[1]);
+  // the chosen plane's journey: the path it has flown (from the adsb.lol network, beyond your receiver's range),
+  // the great circle still to fly, and the two airports
+  function drawRoute(g, mp, tiles, ink, halo, font) {
+    const a = Pl.sel && Pl.list.find(x => x.icao === Pl.sel); if (!a || a.lat == null) return;
+    const r = routeOf(a), tr = (Pl.trace[a.icao] || {}).points || [];
+    g.save(); g.lineCap = 'round'; g.lineJoin = 'round';
+    if (tr.length > 1) {
+      g.lineWidth = 2.5; g.globalAlpha = 0.6;
+      for (let i = 1; i < tr.length; i++) {
+        const q0 = mp.proj(tr[i - 1][1], tr[i - 1][2]), q1 = mp.proj(tr[i][1], tr[i][2]);
+        g.strokeStyle = altColor(tr[i][3] != null ? tr[i][3] : a.alt); g.beginPath(); g.moveTo(q0.x, q0.y); g.lineTo(q1.x, q1.y); g.stroke();
+      }
+    }
+    g.globalAlpha = 1;
+    if (r) {
+      const line = (la1, lo1, la2, lo2) => { const P = gcPath(la1, lo1, la2, lo2, 64); g.beginPath(); P.forEach((p, i) => { const q = mp.proj(p[0], p[1]); i ? g.lineTo(q.x, q.y) : g.moveTo(q.x, q.y); }); g.stroke(); };
+      g.strokeStyle = tiles ? '#1f2937aa' : '#ffffffb0'; g.lineWidth = 1.6; g.setLineDash([6, 5]);
+      if (hasLL(r.destination)) line(a.lat, a.lon, r.destination.lat, r.destination.lon);
+      if (hasLL(r.origin) && tr.length < 2) { g.globalAlpha = 0.45; line(r.origin.lat, r.origin.lon, a.lat, a.lon); g.globalAlpha = 1; }
+      g.setLineDash([]);
+      [r.origin, ...(r.stops || []), r.destination].forEach((x, i, all) => {
+        if (!hasLL(x)) return; const q = mp.proj(x.lat, x.lon), end = i === all.length - 1;
+        g.fillStyle = end ? (RS.cssv('--pri') || '#0d6e7b') : (tiles ? '#475569' : '#cbd5e1'); g.strokeStyle = tiles ? '#fff' : '#000'; g.lineWidth = 2;
+        g.beginPath(); g.arc(q.x, q.y, 5, 0, 7); g.fill(); g.stroke();
+        g.font = '700 12px ' + font; g.textAlign = 'left'; g.lineWidth = 3; g.strokeStyle = halo; g.fillStyle = ink;
+        g.strokeText(apCode(x), q.x + 9, q.y + 4); g.fillText(apCode(x), q.x + 9, q.y + 4);
+      });
+    }
+    g.restore();
+  }
+  // a minute between asks while a plane is chosen: the network's track of its flight so far
+  async function loadTrace(a) {
+    const c = Pl.trace[a.icao]; if (c && Date.now() - c.t < 60000) return;
+    Pl.trace[a.icao] = Object.assign(c || { points: [] }, { t: Date.now() });
+    try { const r = await RS.api('planes/trace?icao=' + encodeURIComponent(a.icao)); Pl.trace[a.icao] = Object.assign(r, { t: Date.now() }); } catch (e) { }
+    Pl.map.dirty = true; if (Pl.sel === a.icao) detail();
+  }
+  RS.act['pl-route-fit'] = () => {
+    const a = Pl.list.find(x => x.icao === Pl.sel), r = a && routeOf(a); if (!a || !r) return;
+    const pts = [r.origin, r.destination, ...(r.stops || [])].filter(hasLL).map(x => [x.lat, x.lon]).concat(a.lat != null ? [[a.lat, a.lon]] : []);
+    Pl.follow = false; fitTo(pts);
+  };
+  function fitTo(pts) {
+    const mp = Pl.map; if (!mp || !pts.length) return; const la = pts.map(x => x[0]), lo = pts.map(x => x[1]);
     mp.setView((Math.min(...la) + Math.max(...la)) / 2, (Math.min(...lo) + Math.max(...lo)) / 2, 12);
     const w = mp.cv.clientWidth, h = mp.cv.clientHeight;
     for (let z = 12; z >= 2; z--) { mp.z = z; if (pts.every(q => { const p = mp.proj(q[0], q[1]); return p.x > 30 && p.x < w - 30 && p.y > 30 && p.y < h - 30; })) break; }
     mp.dirty = true;
+  }
+  Pl.fitAll = () => {
+    fitTo(Pl.list.filter(a => a.lat != null).map(a => [a.lat, a.lon]).concat([Pl.home || [RS.cfg.lat, RS.cfg.lon]]));
   };
   function followSel() {
     const a = Pl.list.find(x => x.icao === Pl.sel);
@@ -331,7 +449,8 @@
   function matches(a, q) {
     if (!q) return true; const i = Pl.info[a.icao], ac = i && i.aircraft, r = i && i.route;
     return [a.callsign, a.icao, a.squawk, RS.airline && RS.airline(a.callsign), ac && ac.registration, ac && ac.type, ac && ac.icao_type, ac && ac.registered_owner,
-      r && r.origin && r.origin.municipality, r && r.destination && r.destination.municipality].some(x => x && String(x).toLowerCase().includes(q));
+      modelOf(a), r && r.flight, r && r.airline, ...(r && r.origin ? [r.origin.city, r.origin.iata, r.origin.name] : []),
+      ...(r && r.destination ? [r.destination.city, r.destination.iata, r.destination.name] : [])].some(x => x && String(x).toLowerCase().includes(q));
   }
   function row(a) {
     const tr = trend(a), badges = (Pl.isEmg(a) ? '<em class="pl-b emg">Emergency</em>' : '') + (Pl.speaking(a.icao) ? '<em class="pl-b talk">Talking</em>' : '') + (a.mil ? '<em class="pl-b mil">Military?</em>' : '');
@@ -357,15 +476,18 @@
 
   // ---------------------------------------------------------------- details of the chosen plane
   async function info(a, force) {
-    const k = a.icao, c = Pl.info[k];
-    if (c && !force && (c.ok || Date.now() - c.t < 60000)) return c;
-    try { const r = await RS.api('planes/info?icao=' + encodeURIComponent(k) + '&callsign=' + encodeURIComponent(a.callsign || '')); Pl.info[k] = Object.assign(r, { t: Date.now() }); }
-    catch (e) { Pl.info[k] = { ok: false, t: Date.now() }; }
+    // asked again once the callsign arrives or changes: the route belongs to the callsign, not the aircraft
+    const k = a.icao, c = Pl.info[k], cs = a.callsign || '';
+    if (c && !force && c.cs === cs && (c.ok || Date.now() - c.t < 60000)) return c;
+    // the chosen plane may also have its takeoff airport looked up, which settles a route the sources disagree on
+    const where = (a.lat != null ? '&lat=' + a.lat.toFixed(3) + '&lon=' + a.lon.toFixed(3) : '') + (k === Pl.sel ? '&chosen=1' : '');
+    try { const r = await RS.api('planes/info?icao=' + encodeURIComponent(k) + '&callsign=' + encodeURIComponent(cs) + where); Pl.info[k] = Object.assign(r, { t: Date.now(), cs }); }
+    catch (e) { Pl.info[k] = { ok: false, t: Date.now(), cs }; }
     return Pl.info[k];
   }
   // a few list rows at a time get their type and route, one request every 2 seconds, while the page is open
   const want = []; let busy = false, offUntil = 0;
-  function queueInfo(L) { L.forEach(a => { if (!Pl.info[a.icao] && !want.includes(a)) want.push(a); }); pump(); }
+  function queueInfo(L) { L.forEach(a => { const c = Pl.info[a.icao]; if ((!c || c.cs !== (a.callsign || '')) && !want.includes(a)) want.push(a); }); pump(); }
   async function pump() {
     if (busy || !want.length || RS.page !== 'planes' || Date.now() < offUntil) return; busy = true;
     const a = want.shift(); const r = await info(a); if (r && r.ok === false) offUntil = Date.now() + 300000;
@@ -379,37 +501,71 @@
   Pl.pick = pick;
   function show(on) {
     $('#pl-lv').hidden = on; $('#pl-dv').hidden = !on;
-    if (on) { const a = Pl.list.find(x => x.icao === Pl.sel); if (a) { detail(); info(a).then(() => detail()); } else if (!Pl.replay) { Pl.sel = null; $('#pl-lv').hidden = false; $('#pl-dv').hidden = true; } }
+    if (on) { const a = Pl.list.find(x => x.icao === Pl.sel); if (a) { detail(); info(a).then(() => { detail(); Pl.map.dirty = true; }); if (!Pl.replay) loadTrace(a); } else if (!Pl.replay) { Pl.sel = null; $('#pl-lv').hidden = false; $('#pl-dv').hidden = true; } }
     if (on && window.innerWidth <= 900) $('#pl-side').scrollIntoView({ block: 'nearest', behavior: RS.motionOK && !RS.motionOK() ? 'auto' : 'smooth' });
   }
   Pl.showSel = () => { if (Pl.sel) detail(); };
   function detail() {
     const box = $('#pl-dv'), a = Pl.list.find(x => x.icao === Pl.sel); if (!box || box.hidden) return;
     if (!a) { box.innerHTML = '<button class="btn small ghost pl-back" type="button" data-act="pl-back">' + icon('left') + '<span>All aircraft</span></button><div class="sen-empty"><b>Out of range</b><span>' + esc(Pl.sel ? Pl.sel.toUpperCase() : '') + ' has not been heard for a while.</span></div>'; return; }
-    const I = Pl.info[a.icao] || {}, ac = I.aircraft || {}, rt = I.route || null, airline = (rt && rt.airline) || (RS.airline && RS.airline(a.callsign)) || '';
-    const country = ac.registered_owner_country_name || (RS.countryOf && RS.countryOf(a.icao)) || '';
-    const vr = a.vrate == null ? '-' : Math.abs(a.vrate) < 300 ? 'Level' : (a.vrate > 0 ? 'Climbing ' : 'Descending ') + N(Math.abs(a.vrate)) + ' ft/min';
+    const I = Pl.info[a.icao] || {}, ac = I.aircraft || {}, rt = I.route || null, r = routeOf(a), airline = (rt && rt.airline) || (RS.airline && RS.airline(a.callsign)) || '';
+    const country = ac.registered_owner_country_name || countryName(ac.registered_owner_country_iso_name) || (RS.countryOf && RS.countryOf(a.icao)) || '';
+    const model = modelOf(a);
+    const vr = a.vrate == null ? '-' : Math.abs(a.vrate) < 100 ? '0 ft/min' : (a.vrate > 0 ? '+' : '−') + N(Math.abs(a.vrate)) + ' ft/min';
     const sq = a.squawk ? a.squawk + ({ 7500: ' (hijack)', 7600: ' (radio failure)', 7700: ' (emergency)', 1200: ' (VFR)', 7000: ' (VFR)' }[a.squawk] || '') : '-';
     const ago = s => s < 5 ? 'Just now' : s < 60 ? Math.round(s) + ' s ago' : Math.round(s / 60) + ' min ago';
-    const ap = x => x ? '<span class="pl-ap"><b>' + esc(x.iata_code || x.icao_code || '') + '</b><small>' + esc(x.municipality || x.name || '') + '</small></span>' : '';
-    const tiles = [['Altitude', altTxt(a) + (trend(a) ? (trend(a) === 'up' ? ' ↑' : ' ↓') : '')], ['Speed', spd(a.speed) + (a.speed != null ? '<small>' + N(a.speed) + ' kt</small>' : '')],
-      ['Vertical speed', vr], ['Heading', a.heading != null ? N(a.heading) + '° ' + ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'][Math.round(((a.heading % 360) + 360) % 360 / 45) % 8] : '-'],
-      ['From you', a.dist_km != null ? dist(a.dist_km) + '<small>to the ' + dirOf(a.bearing) + '</small>' : 'No position yet'], ['Squawk', sq]];
-    const facts = [['Registration', ac.registration], ['Aircraft', [ac.manufacturer, ac.type].filter(Boolean).join(' ') || a.cat], ['Operator', ac.registered_owner],
-      ['Registered in', country], ['Address (ICAO)', a.icao.toUpperCase()], ['Messages', N(a.msgs)], ['Last heard', ago(a.age || 0)], ['First heard', a.first ? new Date(a.first * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-']].filter(x => x[1]);
-    const photo = ac.url_photo || ac.url_photo_thumbnail;
+    const hm = t => new Date(t).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const compass = d => ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'][Math.round(((d % 360) + 360) % 360 / 45) % 8];
+    // the journey: where from, where to, how far along, when it should land
+    let journey = '';
+    if (r) {
+      // "T3" -> "Terminal 3", "T3/T4" -> "Terminal 3 or 4"; named terminals ("Domestic Terminal") as they are
+      const term = t => !t ? '' : /^T\d+(\/T\d+)?$/.test(t) ? 'Terminal ' + t.replace(/^T/, '').replace('/T', ' or ') : t;
+      const end = (x, cls) => '<div class="pl-ap' + cls + '"><b>' + esc(apCode(x)) + '</b><span>' + esc(x.city || x.name || '') + '</span>' +
+        (x.terminal ? '<em class="pl-term">' + esc(term(x.terminal) + (x.gate ? ', gate ' + x.gate : '')) + '</em>' : '') +
+        '<small>' + esc([x.name !== x.city ? x.name : '', countryName(x.country)].filter(Boolean).join(', ')) + '</small></div>';
+      const pg = progress(a, r), stops = (r.stops || []).filter(Boolean), ph = phase(a), place = x => x.city || x.name || apCode(x);
+      const to = r.destination, where = { climb: 'Climbing out of ' + place(r.origin), descend: to ? 'Descending into ' + place(to) : 'Descending',
+        cruise: to ? 'Cruising to ' + place(to) : 'Cruising', level: to ? 'Flying level towards ' + place(to) : 'Flying level',
+        ground: 'On the ground at ' + place(to && pg && pg.left < pg.flown ? to : r.origin) }[ph] || '';
+      const unknown = '<div class="pl-ap to pl-ap-none"><b>?</b><span>Unknown</span><small>Not on record yet</small></div>';
+      journey = '<section class="pl-jy" aria-label="Route">' +
+        (r.kind ? '<p class="pl-jy-kind" data-kind="' + r.kind + '">' + (r.kind === 'domestic' ? 'Domestic flight' : 'International flight') + '</p>' : '') +
+        '<div class="pl-jy-ends">' + end(r.origin, '') + '<i aria-hidden="true"></i>' + (to ? end(to, ' to') : unknown) + '</div>' +
+        (where ? '<p class="pl-jy-ph" data-phase="' + ph + '">' + esc(where) + '</p>' : '') +
+        (pg ? '<div class="pl-jy-bar" role="progressbar" aria-label="Distance flown" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + Math.round(pg.pct * 100) + '" style="--p:' + pg.pct.toFixed(3) + '"><i></i></div>' +
+          '<p class="pl-jy-t">' + esc(dist(pg.flown)) + ' flown · ' + esc(dist(pg.left)) + ' to go' + (pg.eta && pg.left > 5 ? ' · lands about <b>' + esc(hm(pg.eta)) + '</b>' : '') + '</p>' : '') +
+        (stops.length ? '<p class="pl-jy-t">Stops at ' + esc(stops.map(x => (x.city || x.name) + ' (' + apCode(x) + ')').join(', ')) + '</p>' : '') +
+        '<div class="row tight"><button class="btn small" type="button" data-act="pl-route-fit">' + icon('plane') + '<span>Show the whole route</span></button></div>' +
+        '<small class="pl-src">' + (r.source === 'track' ? 'Takeoff airport from the adsb.lol network\'s track of this flight.' : 'Route from ' + esc(r.source || 'adsbdb') + ', checked against where the plane is. Routes are shared by volunteers and can be out of date; arrival is an estimate based on the plane\'s cruising speed.') +
+          (r.origin.terminal || (to && to.terminal) ? ' A terminal with a gate is where the plane was seen parked (OpenStreetMap\'s airport maps); one without is where this airline normally goes.' : '') + '</small></section>';
+    } else if (I.route && I.route.mismatch) {
+      journey = '<p class="pl-note">Today\'s route for ' + esc(I.route.flight || a.callsign) + ' isn\'t on record with any of the route sources yet, and the network didn\'t see where it took off.</p>';
+    } else if (a.callsign && I.ok && I.cs === a.callsign) {
+      journey = '<p class="pl-note">No route on record for ' + esc(a.callsign) + '. Private, military, cargo and charter flights often have none.</p>';
+    }
+    const tiles = [['Altitude', altTxt(a) + (trend(a) ? (trend(a) === 'up' ? ' ↑' : ' ↓') : '')], ['Ground speed', spd(a.speed) + (a.speed != null ? '<small>' + N(a.speed) + ' kt</small>' : '')],
+      ['Vertical speed', vr], ['Heading', a.heading != null ? N(a.heading) + '° ' + compass(a.heading) : '-'],
+      ['From you', a.dist_km != null ? dist(a.dist_km) + '<small>to the ' + dirOf(a.bearing) + '</small>' : 'No position yet'], ['Squawk', sq]]
+      .concat(a.ias != null ? [['Airspeed', N(a.ias) + ' kt<small>indicated</small>']] : a.tas != null ? [['Airspeed', N(a.tas) + ' kt<small>true</small>']] : []);
+    const facts = [['Registration', ac.registration], ['Aircraft', model || a.cat], ['Variant', ac.type && ac.type !== model ? ac.type : ''], ['Built', ac.year],
+      ['Operator', ac.registered_owner], ['Registered in', country], ['Address (ICAO)', a.icao.toUpperCase()], ['Messages', N(a.msgs)], ['Last heard', ago(a.age || 0)],
+      ['First heard', a.first ? hm(a.first * 1000) : '-']].filter(x => x[1]);
+    const photo = ac.url_photo || ac.url_photo_thumbnail, tr = (Pl.trace[a.icao] || {}).points || [];
     box.innerHTML = '<div class="pl-dv-top"><button class="btn small ghost pl-back" type="button" data-act="pl-back">' + icon('left') + '<span>All aircraft</span></button>' +
       '<span class="pl-dv-act"><button class="btn small' + (Pl.follow ? ' on' : '') + '" type="button" data-act="pl-follow" aria-pressed="' + !!Pl.follow + '">Follow</button>' +
       '<button class="btn small' + (Pl.isolate ? ' on' : '') + '" type="button" data-act="pl-iso" aria-pressed="' + !!Pl.isolate + '">Show only this</button></span></div>' +
-      '<div class="pl-dv-h" style="--alt:' + altColor(a.alt, a.cat) + '"><h3>' + esc(name(a)) + '</h3><span>' + esc([airline, country].filter(Boolean).join(' · ') || a.cat || 'Aircraft') + '</span>' +
+      '<div class="pl-dv-h" style="--alt:' + altColor(a.alt, a.cat) + '"><h3>' + esc(name(a)) + (rt && rt.flight && rt.flight !== a.callsign ? ' <span class="pl-fno">' + esc(rt.flight) + '</span>' : '') + '</h3>' +
+      '<span>' + esc([airline, model].filter(Boolean).join(' · ') || country || a.cat || 'Aircraft') + '</span>' +
       (Pl.isEmg(a) ? '<em class="pl-b emg">Emergency</em>' : '') + (Pl.speaking(a.icao) ? '<em class="pl-b talk">Talking now</em>' : '') + (a.mil ? '<em class="pl-b mil">Military?</em>' : '') + '</div>' +
-      (photo ? '<figure class="pl-photo"><img src="' + esc(photo) + '" alt="' + esc((ac.registration || name(a)) + ', ' + (ac.type || 'aircraft')) + '" referrerpolicy="no-referrer" loading="lazy"><figcaption>Photo: airport-data.com</figcaption></figure>' : '') +
-      (rt && rt.origin && rt.destination ? '<div class="pl-route">' + ap(rt.origin) + '<i aria-hidden="true"></i>' + ap(rt.destination) + '</div>' + (rt.midpoint ? '<div class="pl-route-v">Via ' + esc(rt.midpoint.municipality || rt.midpoint.name || '') + '</div>' : '') : '') +
+      (photo ? '<figure class="pl-photo"><img src="' + esc(photo) + '" alt="' + esc((ac.registration || name(a)) + ', ' + (model || 'aircraft')) + '" referrerpolicy="no-referrer" loading="lazy"><figcaption>Photo: airport-data.com</figcaption></figure>' : '') +
+      journey +
       '<div class="sen-kv pl-kv">' + tiles.map(x => '<div><dt>' + x[0] + '</dt><dd>' + x[1] + '</dd></div>').join('') + '</div>' +
       '<figure class="pl-fig pl-prof"><figcaption>Altitude over the last few minutes</figcaption><canvas id="pl-prof"></canvas></figure>' +
       '<dl class="sen-meta">' + facts.map(x => '<div><dt>' + x[0] + '</dt><dd>' + esc(x[1]) + '</dd></div>').join('') + '</dl>' +
-      (I.ok === false ? '<p class="pl-note">Registration, type and route need the internet on the computer running Skywave.</p>' : !I.aircraft && I.ok ? '<p class="pl-note">No registration or type on record for this aircraft.</p>' : '') +
-      '<div class="row tight pl-out"><a class="btn small ghost" href="https://globe.adsbexchange.com/?icao=' + a.icao + '" target="_blank" rel="noopener noreferrer">Open on ADS-B Exchange</a></div>';
+      '<p class="pl-src">' + (tr.length > 1 ? 'The map shows the whole flight since takeoff (' + esc(hm(tr[0][0] * 1000)) + '), from tracks shared by the adsb.lol network.' : 'The map shows the part of the flight your radio has heard.') + '</p>' +
+      (I.ok === false ? '<p class="pl-note">Registration, model, route and the flight so far need the internet on the computer running Skywave.</p>' : !I.aircraft && I.ok ? '<p class="pl-note">No registration or model on record for this aircraft.</p>' : '') +
+      '<div class="row tight pl-out"><a class="btn small ghost" href="https://adsb.lol/?icao=' + a.icao.toLowerCase() + '" target="_blank" rel="noopener noreferrer">Open on adsb.lol</a></div>';
     const im = box.querySelector('.pl-photo img'); if (im) im.addEventListener('error', () => im.closest('figure').remove(), { once: true });
     profile(a);
   }

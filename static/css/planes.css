@@ -77,14 +77,30 @@
 :root[data-style] .pl-photo { margin: 0 0 14px; border-radius: min(var(--r-ctl), 12px); overflow: hidden; background: var(--sf-2); }
 :root[data-style] .pl-photo img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; }
 :root[data-style] .pl-photo figcaption { padding: 5px 10px; font-size: 11px; color: var(--ink-3, var(--ink-2)); }
-:root[data-style] .pl-route { display: grid; grid-template-columns: minmax(0, 1fr) 40px minmax(0, 1fr); align-items: center; gap: 6px; margin: 0 0 4px; padding: 12px 14px; border-radius: min(var(--r-ctl), 12px); background: var(--sf-2); }
-:root[data-style] .pl-route > i { height: 2px; background: linear-gradient(90deg, transparent, var(--ink-3, #888) 30% 70%, transparent); position: relative; }
-:root[data-style] .pl-route > i::after { content: ""; position: absolute; right: 6px; top: -4px; border: 5px solid transparent; border-left: 7px solid var(--ink-3, #888); border-right: 0; }
-:root[data-style] .pl-ap { display: grid; min-width: 0; }
-:root[data-style] .pl-ap:last-child { text-align: right; }
-:root[data-style] .pl-ap b { font-family: var(--f-num); font-weight: var(--w-num); font-size: 24px; letter-spacing: .02em; }
-:root[data-style] .pl-ap small { font-size: 12.5px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-:root[data-style] .pl-route-v { font-size: 12.5px; color: var(--ink-3, var(--ink-2)); margin: 0 0 10px; }
+:root[data-style] .pl-fno { margin-left: 6px; padding: 1px 8px; border-radius: min(var(--r-chip), 999px); background: var(--sf-2); font-size: 14px; font-weight: 600; vertical-align: 4px; color: var(--ink-2); }
+/* the journey: two airports, the distance flown as a bar with the plane on it, and the expected landing */
+:root[data-style] .pl-jy { margin: 0 0 4px; padding: 14px 14px 12px; border-radius: min(var(--r-ctl), 12px); background: var(--sf-2); display: grid; gap: 10px; }
+:root[data-style] .pl-jy-ends { display: grid; grid-template-columns: minmax(0, 1fr) 36px minmax(0, 1fr); align-items: start; gap: 6px; }
+:root[data-style] .pl-jy-ends > i { margin-top: 15px; height: 2px; background: linear-gradient(90deg, transparent, var(--ink-3, #888) 30% 70%, transparent); position: relative; }
+:root[data-style] .pl-jy-ends > i::after { content: ""; position: absolute; right: 4px; top: -4px; border: 5px solid transparent; border-left: 7px solid var(--ink-3, #888); border-right: 0; }
+:root[data-style] .pl-ap { display: grid; min-width: 0; gap: 1px; }
+:root[data-style] .pl-ap.to { text-align: right; }
+:root[data-style] .pl-ap b { font-family: var(--f-num); font-weight: var(--w-num); font-size: 26px; letter-spacing: .02em; line-height: 1.1; }
+:root[data-style] .pl-ap span { font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+:root[data-style] .pl-ap small { font-size: 12px; color: var(--ink-2); line-height: 1.35; }
+:root[data-style] .pl-jy-bar { position: relative; height: 6px; margin: 6px 6px 2px; border-radius: 3px; background: color-mix(in srgb, var(--ink) 12%, transparent); }
+:root[data-style] .pl-jy-bar::before { content: ""; position: absolute; inset: 0 auto 0 0; width: calc(var(--p) * 100%); border-radius: inherit; background: var(--pri, var(--teal)); }
+:root[data-style] .pl-jy-bar > i { position: absolute; top: 50%; left: calc(var(--p) * 100%); width: 14px; height: 14px; translate: -50% -50%; border-radius: 50%; background: var(--pri, var(--teal)); box-shadow: 0 0 0 3px var(--sf, var(--panel)); }
+:root[data-style] .pl-jy-t { margin: 0; font-size: 13.5px; color: var(--ink-2); }
+:root[data-style] .pl-jy-t b { color: var(--ink); font-weight: 600; }
+:root[data-style] .pl-jy .row { margin: 0; }
+:root[data-style] .pl-jy .pl-note { margin: 0; }
+:root[data-style] .pl-src { display: block; margin: 10px 0 0; font-size: 12px; color: var(--ink-3, var(--ink-2)); }
+:root[data-style] .pl-jy .pl-src { margin: 0; }
+:root[data-style] .pl-jy-ph { margin: 0; font-size: 15px; font-weight: 600; color: var(--ink); }
+:root[data-style] .pl-jy-kind { margin: 0; font-size: 12.5px; font-weight: 600; color: var(--ink-2); }
+:root[data-style] .pl-ap .pl-term { display: block; font-style: normal; font-size: 13px; font-weight: 600; color: var(--ink); }
+/* where the autopilot is taking it */
 :root[data-style] .pl-kv { margin-top: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 :root[data-style] .pl-kv dd { font-size: 17px; }
 :root[data-style] .pl-kv dd small { display: block; font-family: var(--f-body); font-size: 12px; font-weight: 400; color: var(--ink-3, var(--ink-2)); }

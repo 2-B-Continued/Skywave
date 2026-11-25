@@ -128,7 +128,7 @@
   // ---------------------------------------------------------------- transcripts (Library)
   RS.act['tx-view'] = async el => {
     const t = await (await fetch('/txt/' + encodeURIComponent(el.dataset.f))).text();
-    RS.modal('<h2 style="margin-top:0">' + esc(el.dataset.f) + '</h2><pre class="txview">' + esc(t) + '</pre><div class="row"><a class="btn" href="/txt/' + encodeURIComponent(el.dataset.f) + '?download=1">Download</a><button class="btn primary" onclick="RS.closeModal()">Close</button></div>');
+    RS.modal('<h2 style="margin-top:0">' + esc(el.dataset.f) + '</h2><pre class="txview">' + esc(t) + '</pre><div class="row"><a class="btn" href="/txt/' + encodeURIComponent(el.dataset.f) + '?download=1">Download</a><button class="btn primary" data-act="closeModal">Close</button></div>');
   };
   RS.act['tx-del'] = el => RS.confirm('Delete this transcript?', el.dataset.f, 'Delete', async () => { await RS.api('transcripts/delete', { file: el.dataset.f }); if (RS.pages.library.transcripts) RS.pages.library.transcripts(); });
 

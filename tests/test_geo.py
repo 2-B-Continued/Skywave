@@ -28,6 +28,19 @@ OSM = {
     "SW1A 1AA": [{"lat": "51.5010", "lon": "-0.1416", "name": "", "importance": 0.3,
                   "address": {"postcode": "SW1A 1AA", "city": "London", "state": "England", "country": "United Kingdom", "country_code": "gb"}}],
 }
+# a postcode-only search for Bondi: Open-Meteo names the city whose postcodes include it, OpenStreetMap the postcode itself
+OM["2026"] = [{"name": "Sydney", "latitude": -33.8678, "longitude": 151.2073, "country_code": "AU", "country": "Australia",
+               "admin1": "New South Wales", "timezone": "Australia/Sydney", "population": 4600000, "postcodes": ["2000", "2026"]}]
+OSM["2026"] = [{"lat": "-33.8915", "lon": "151.2767", "name": "2026", "importance": 0.3,
+                "address": {"postcode": "2026", "city": "Sydney", "state": "New South Wales", "country": "Australia", "country_code": "au"}}]
+REVERSE = {(-33.89, 151.28): {"address": {"suburb": "Bondi", "city": "Sydney", "state": "New South Wales", "postcode": "2026"}},
+           (-33.87, 151.21): {"address": {"suburb": "Sydney", "city": "Sydney", "state": "New South Wales", "postcode": "2000"}},
+           (35.99, -78.9): {"address": {"city": "Durham", "state": "North Carolina", "postcode": "27701"}}}
+# a name used in several countries
+OM["Richmond"] = [
+    {"name": "Richmond", "latitude": 37.5538, "longitude": -77.4603, "country_code": "US", "country": "United States", "admin1": "Virginia", "timezone": "America/New_York", "population": 226000},
+    {"name": "Richmond", "latitude": 51.4613, "longitude": -0.3037, "country_code": "GB", "country": "United Kingdom", "admin1": "England", "timezone": "Europe/London", "population": 20000},
+    {"name": "Richmond", "latitude": -37.8183, "longitude": 145.0018, "country_code": "AU", "country": "Australia", "admin1": "Victoria", "timezone": "Australia/Melbourne", "population": 27000}]
 CALLS = []
 
 
@@ -37,6 +50,10 @@ def fake(url, timeout=8):
     if "geocoding-api.open-meteo.com" in url:
         res = [x for x in OM.get(q["name"], []) if not q.get("countryCode") or x["country_code"] == q["countryCode"]]
         return {"results": res} if res else {}
+    if "nominatim" in url and "/reverse" in url:
+        return REVERSE.get((round(float(q["lat"]), 2), round(float(q["lon"]), 2)), {})
+    if "photon.komoot.io/reverse" in url:
+        return {}
     if "nominatim" in url:
         key = q["q"].replace(",", "")
         key = " ".join(key.split())
@@ -93,6 +110,21 @@ def busy(url, timeout=8):
 r = geo.geocode("Somewhere Street Durham", "", fetch=busy)
 check("OpenStreetMap busy: Photon answers", r and r[0]["name"] == "Durham" and r[0]["country"] == "United States", r)
 check("OpenStreetMap is asked twice (one retry) before giving up", seen.count("nominatim.openstreetmap.org") == 2, seen)
+r = geo.geocode("2026", "au", fetch=fake)
+check("a postcode shows the suburb it belongs to, with the city as its area", r and r[0]["name"] == "Bondi" and r[0]["area"] == "Sydney" and r[0]["postcode"] == "2026", r)
+check("a centre in another postcode keeps its name", not any(x["name"] == "Sydney" and x["postcode"] == "2026" and x["area"] for x in r) and any(x["name"] == "Sydney" for x in r), r)
+check("the label reads suburb, city, state, postcode", r and r[0]["label"] == "Bondi, Sydney, New South Wales, 2026", r and r[0]["label"])
+r = first("Park Slope, NY 11215"); check("a typed suburb is left alone", r and r["name"] == "Park Slope", r)
+
+CALLS.clear()
+r = geo.geocode("Richmond", "AU", fetch=fake)
+check("with a country chosen, only places in it", r and all(x["cc"] == "AU" for x in r), [x["cc"] for x in r or []])
+check("the search services are asked for that country only", all("countryCode=AU" in u or "countrycodes=au" in u for u in CALLS if "search" in u), CALLS)
+r = geo.geocode("Richmond", "", fetch=fake)
+check("with no country chosen, the whole world", r and {x["cc"] for x in r} >= {"US", "GB", "AU"}, [x["cc"] for x in r or []])
+r = geo.geocode("Richmond, UK", "AU", fetch=fake)
+check("a country typed in the search wins over the chosen one", r and all(x["cc"] == "GB" for x in r), [x["cc"] for x in r or []])
+
 tries = []
 def once(url, timeout=8):
     if "nominatim" in url:
@@ -111,5 +143,15 @@ try:
     geo.geocode("Somewhere Street Durham", "", fetch=all_busy); check("everything busy is reported as busy", False)
 except geo.Busy:
     check("everything busy is reported as busy", True)
+# search as you type: never asks Nominatim (its policy forbids lookups on every keystroke), still finds places
+seen = []
+def watch(url, timeout=8):
+    seen.append(url)
+    return fake(url, timeout)
+rs = geo.geocode("Durham NC", "", fetch=watch, suggest=True)
+check("suggestions never ask Nominatim", not any("nominatim" in u for u in seen), seen)
+check("suggestions still find the place", any(x["name"] == "Durham" for x in rs), rs)
+seen.clear(); geo.geocode("2026", "au", fetch=watch, suggest=True)
+check("a postcode typed as a suggestion never asks Nominatim either", not any("nominatim" in u for u in seen), seen)
 print("FAILED %d" % fails if fails else "PASS")
 sys.exit(1 if fails else 0)

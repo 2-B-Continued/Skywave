@@ -270,7 +270,7 @@
     }
     const nm = $('#se-name');
     nm.onchange = () => RS.api('sensors/set', { key: s.key, name: nm.value });
-    nm.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); nm.blur(); } };
+    nm.onkeydown = e => { if (RS.isEnter(e)) { e.preventDefault(); nm.blur(); } };
     const H = await hist(s.key), box = $('#se-charts'); if (!box) return;
     const fs = r.filter(x => x[2] && H[x[2]] && H[x[2]].length > 1);
     box.innerHTML = fs.length ? fs.map(x => '<figure><figcaption>' + esc(x[0]) + ', last 24 hours</figcaption><canvas data-f="' + x[2] + '"></canvas></figure>').join('')

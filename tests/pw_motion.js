@@ -3,7 +3,7 @@
 // NODE_PATH=$(npm root -g) node tests/pw_motion.js   (SHOTS=/tmp/mo for mid-animation screenshots)
 const { chromium } = require('playwright'); const { spawn } = require('child_process'); const fs = require('fs'), os = require('os'), path = require('path');
 const PORT = 18131, SHOTS = process.env.SHOTS || '';
-const STYLES = (process.env.STYLES || 'skywave,classic,lumen,bento,folio,terminal,brut,ticket,pane,console').split(',');
+const STYLES = (process.env.STYLES || 'skywave,depth,relief,walnut,riot,bento,folio,terminal,brut,ticket').split(',');
 let fails = 0; const ok = (c, m) => { if (!c) { fails++; console.log('FAIL', m); } };
 (async () => {
   const d = fs.mkdtempSync(path.join(os.tmpdir(), 'mo-'));

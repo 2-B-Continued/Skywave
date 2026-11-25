@@ -340,6 +340,10 @@ class SimAircraft:
             self.next_vel = now + 0.5
         if now >= self.next_id:
             out.append(adsb.encode_ident(self.icao, self.callsign))
+            alt = self.alt + self.vrate * (now - self.t0) / 60.0
+            target = alt if not self.vrate else (36000 if self.vrate > 0 else 10000)
+            out.append(adsb.encode_target_state(self.icao, target, fms=bool(self.vrate), baro_hpa=1013.2, sel_hdg=self.heading,
+                                                modes=("ap", "lnav", "tcas") + (("vnav",) if self.vrate else ("alt",))))
             self.next_id = now + 5.0
         return out
 

@@ -31,7 +31,9 @@
     const m = RS.cfg.mqtt || {};
     if (!$('#mq-on')) return;
     $('#mq-on').checked = !!m.on; $('#mq-host').value = m.host || ''; $('#mq-port').value = m.port || 1883; $('#mq-user').value = m.user || '';
-    $('#mq-pass').placeholder = m.has_pass ? 'saved (type to change)' : ''; $('#mq-disc').checked = m.discovery !== false; $('#mq-pre').value = m.prefix || 'skywave';
+    const hint = () => { const same = $('#mq-host').value.trim() === (m.host || '') && (parseInt($('#mq-port').value, 10) || 1883) === (m.port || 1883);
+      $('#mq-pass').placeholder = m.has_pass ? (same ? 'saved (type to change)' : 'type the password for this broker') : ''; };
+    hint(); $('#mq-host').oninput = hint; $('#mq-port').oninput = hint; $('#mq-disc').checked = m.discovery !== false; $('#mq-pre').value = m.prefix || 'skywave';
     poll();
   }
   function form() {

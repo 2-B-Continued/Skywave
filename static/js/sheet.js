@@ -76,7 +76,7 @@
     if (instant === true || still()) return close();
     // take it out of the dialog slot at once (so a new dialog can open), and let it slide away on its own
     const m = back.firstChild, onc = RS._onclose; RS._onclose = null;
-    back.style.pointerEvents = 'none'; document.body.appendChild(back);
+    RS.releaseModal(back); back.style.pointerEvents = 'none'; document.body.appendChild(back);
     const away = () => back.remove();
     if (RS.isTouch && m) RS.sheetAway(m, back, away);
     else if (RS.feel) RS.feel.modalAway(back, m, away);          // back into the button that opened it, 20% quicker than it came
@@ -87,7 +87,7 @@
     const m = modal.apply(this, arguments);
     if (m && RS.isTouch) {
       m.classList.add('is-sheet');
-      RS.sheetDrag(m, { handleZone: 40, onDismiss: v => { const r = $('#modal-root'), back = r && r.firstChild; const onc = RS._onclose; RS._onclose = null; if (back) { document.body.appendChild(back); back.style.pointerEvents = 'none'; RS.sheetAway(m, back, () => back.remove(), v); } if (onc) onc(); },
+      RS.sheetDrag(m, { handleZone: 40, onDismiss: v => { const r = $('#modal-root'), back = r && r.firstChild; const onc = RS._onclose; RS._onclose = null; if (back) { RS.releaseModal(back); document.body.appendChild(back); back.style.pointerEvents = 'none'; RS.sheetAway(m, back, () => back.remove(), v); } if (onc) onc(); },
         onMove: (y, h) => { const b = m.parentElement; if (b) b.style.opacity = String(Math.max(0.15, 1 - y / h)); } });
     }
     return m;

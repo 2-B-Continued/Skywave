@@ -12,11 +12,11 @@ const { chromium } = require('playwright'); const { spawn } = require('child_pro
   await p.evaluate(() => RS.setStyle('terminal')); await p.waitForTimeout(400);
   { const bad = await p.evaluate(() => [...document.querySelectorAll('.card,.btn,input,select')].filter(e => getComputedStyle(e).borderTopLeftRadius !== '0px').map(e => e.className + '|' + (e.id||'') + '|' + getComputedStyle(e).borderTopLeftRadius).slice(0, 6)); chk('radius 0 on cards', bad.length === 0, bad); }
   chk('all styles offered', (await p.$$('[data-act="sty-pick"]')).length === 10);
-  await p.click('[data-act="sty-pick"][data-id="classic"]'); await p.waitForTimeout(500);
-  chk('classic applies', await st() === 'classic');
-  chk('classic has rounded corners', await p.evaluate(() => parseFloat(getComputedStyle(document.querySelector('.card')).borderTopLeftRadius) > 4));
+  await p.click('[data-act="sty-pick"][data-id="riot"]'); await p.waitForTimeout(500);
+  chk('riot applies', await st() === 'riot');
+  chk('riot has rounded corners', await p.evaluate(() => parseFloat(getComputedStyle(document.querySelector('.card')).borderTopLeftRadius) > 4));
   await p.reload(); await p.waitForTimeout(2000);
-  chk('choice survives reload', await st() === 'classic');
+  chk('choice survives reload', await st() === 'riot');
   await p.click('[data-act="sty-pick"][data-id="skywave"]'); await p.waitForTimeout(300);
   await p.click('[data-act="th-pick"][data-id="phosphor"]'); await p.waitForTimeout(300);
   chk('colour theme works with the style', await p.evaluate(() => document.documentElement.dataset.palette === 'phosphor' && document.documentElement.dataset.style === 'skywave'));

@@ -1,0 +1,2 @@
+/* boot.js - applies the saved style and theme before the page draws, so it never flashes the wrong look. Loaded in <head>. */
+try{var t=localStorage.getItem('rs.theme');if(t)document.documentElement.setAttribute('data-theme',JSON.parse(t));document.documentElement.setAttribute('data-style',(function(v){return ['depth','relief','walnut','riot','bento','folio','terminal','brut','ticket'].indexOf(v)>=0?v:'skywave'})(JSON.parse(localStorage.getItem('rs.style')||'"skywave"')));if(JSON.parse(localStorage.getItem('rs.adv')))document.documentElement.classList.add('adv0')}catch(e){}

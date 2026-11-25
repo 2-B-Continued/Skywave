@@ -285,7 +285,7 @@
     // the whole band as a labelled scale, so it is clear where every mark on the strip sits
     d.ovScale = (g, w, H, h, b, ink) => {
       const span = b.hi - b.lo, major = niceStep(span / Math.max(2, Math.floor(w / 72))), sk = RS.sk();
-      const font = { lumen: '500 10.5px Inter, sans-serif', bento: '700 10.5px "JetBrains Mono", monospace', folio: 'italic 13px "Instrument Serif", Georgia, serif', aurora: '500 10px "Geist Mono", monospace', skywave: '500 11px "Lumen Inter", Inter, sans-serif', classic: '11px Atkinson, sans-serif' }[sk] || '11px "B612 Mono", monospace';
+      const font = { relief: '600 10.5px "V Inter", Inter, sans-serif', walnut: '600 10.5px "V Sans", sans-serif', riot: '800 11px "V Bricolage", sans-serif', depth: '500 11px "V Jura", sans-serif', bento: '700 10.5px "JetBrains Mono", monospace', folio: 'italic 13px "Instrument Serif", Georgia, serif', skywave: '500 11px "V Inter", Inter, sans-serif' }[sk] || '11px "B612 Mono", monospace';
       g.save(); g.fillStyle = ink; g.globalAlpha = .45; g.fillRect(0, h, w, 1); g.globalAlpha = 1; g.font = font; g.textAlign = 'center'; g.textBaseline = 'alphabetic';
       for (let f = Math.ceil(b.lo / major) * major; f <= b.hi + 1; f += major) {
         const x = (f - b.lo) / span * w, dec = major >= 1e6 ? 0 : major >= 1e5 ? 1 : major >= 1e4 ? 2 : major >= 1e3 ? 3 : 4;
@@ -308,10 +308,11 @@
   };
 
   // ---------------------------------------------------------------- spectrum + waterfall
-  RS.Scope = function (spec, water, info) {
+  RS.Scope = function (spec, water, info, opts) {
     const s = this; s.spec = spec; s.water = water; s.info = info;
-    water.width = 1024; water.height = 190;
-    const wg = water.getContext('2d'); wg.fillStyle = '#091419'; wg.fillRect(0, 0, 1024, 190);
+    const ROWS = (opts && opts.rows) || 190;            // waterfall history kept on screen, one row per spectrum line
+    water.width = 1024; water.height = ROWS;
+    const wg = water.getContext('2d'); wg.fillStyle = '#091419'; wg.fillRect(0, 0, 1024, ROWS);
     const row = wg.createImageData(1024, 1);
     // colour maps (stops from low signal to high signal)
     const MAPS = RS.COLORMAPS = {
@@ -371,7 +372,7 @@
       if (now - (s.lastW || 0) >= D.wfms - 5) {
         s.lastW = now;
         const lut = lutFor(D.cmap), wl = D.auto ? L.floor - 4 : D.min, wr = D.auto ? 46 : Math.max(10, D.max - D.min);
-        wg.drawImage(water, 0, 0, 1024, 189, 0, 1, 1024, 189);
+        wg.drawImage(water, 0, 0, 1024, ROWS - 1, 0, 1, 1024, ROWS - 1);
         for (let i = 0; i < 1024; i++) { const t = Math.pow(Math.min(Math.max((cur[i] - wl) / wr, 0), 1), D.gamma || 1), k = Math.round(t * 255) * 3, o = i * 4; row.data[o] = lut[k]; row.data[o + 1] = lut[k + 1]; row.data[o + 2] = lut[k + 2]; row.data[o + 3] = 255; }
         wg.putImageData(row, 0, 0);
       }
@@ -888,6 +889,7 @@
       '<span class="rdp-row-t"><b>' + esc(title) + '</b><small>' + esc(sub) + '</small></span><span class="rdp-row-r">' + right + '</span></button>';
   }
   const ago = t => { const s = Date.now() / 1000 - t; return s < 90 ? 'Just now' : s < 3600 ? Math.round(s / 60) + ' min ago' : s < 86400 ? Math.round(s / 3600) + ' h ago' : new Date(t * 1000).toLocaleDateString([], { day: 'numeric', month: 'short' }); };
+  const songKey = x => x.t + '|' + x.title + '|' + x.artist;
   P.lists = force => {
     const el = $('#rd-list'); if (!el || !tuner) return;
     RS.$$('[data-rd-tab]').forEach(b => { const v = String(b.dataset.rdTab === P.tab); if (b.getAttribute('aria-selected') !== v) { b.setAttribute('aria-selected', v); b.setAttribute('aria-pressed', v); } });
@@ -900,7 +902,7 @@
     } else if (P.tab === 'songs') {
       const L = RS.store.get(SONGS, []);
       sub = 'Songs the stations named, newest first';
-      h = L.length ? L.map((x, i) => '<div class="rdp-song">' + (x.url ? '<img src="' + esc(x.url) + '" alt="" width="44" height="44" loading="lazy">' : '<i class="rdp-song-ph" aria-hidden="true"></i>') +
+      h = L.length ? L.map((x, i) => '<div class="rdp-song" data-sk="' + esc(songKey(x)) + '">' + (x.url ? '<img src="' + esc(x.url) + '" alt="" width="44" height="44" loading="lazy" data-song="' + i + '">' : songPh(x)) +
         '<span class="rdp-row-t"><b>' + esc(x.title) + '</b><small>' + esc(x.artist) + (x.station ? ' · ' + esc(x.station) : '') + ' · ' + ago(x.t) + '</small></span>' +
         (x.track || (x.artist && x.title) ? '<button class="btn small ghost" type="button" data-act="rd-song" data-i="' + i + '">Open in</button>' : '') + '</div>').join('') +
         '<div class="rdp-foot"><button class="btn small ghost" type="button" data-act="rd-songs-clear">Clear the list</button></div>'
@@ -919,14 +921,59 @@
       el._h = h;
       if (force && RS.feel) RS.feel.swap(el, h, { rows: '.rdp-row, .rdp-song, .sen-empty' }); else el.innerHTML = h;
     }
+    if (P.tab === 'songs') coverWatch(el);
     if (RS.feel) RS.feel.mark(el, el.querySelector('.rdp-row.on'));
   };
+  // Covers for the song list. A saved cover is an address on this Skywave; one it can no longer give (an old list, another
+  // device's list, a cover from before covers were kept on disk) is swapped for the placeholder at once, and each song
+  // without a cover is looked up again once per visit, a few seconds apart, and put back when one is found.
+  const NOTE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5.5l11-2V16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="6.5" cy="18" r="2.6" fill="currentColor"/><circle cx="17.5" cy="16" r="2.6" fill="currentColor"/></svg>';
+  const phHue = x => { let h = 7; for (const c of (x.artist || '') + '|' + (x.title || '')) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h % 360; };
+  const songPh = x => '<i class="rdp-song-ph" style="--ph-h:' + phHue(x) + '" aria-hidden="true">' + NOTE + '</i>';
+  const tried = new Set(), coverQ = [];
+  let coverBusy = false;
+  function coverWatch(el) {
+    if (!el._coverWatch) {
+      el._coverWatch = true;
+      el.addEventListener('error', e => {
+        const im = e.target; if (!im || im.tagName !== 'IMG' || im.dataset.song == null) return;
+        const x = RS.store.get(SONGS, [])[+im.dataset.song]; if (!x) return;
+        im.insertAdjacentHTML('afterend', songPh(x)); im.remove();
+        queueCover(x, true);
+      }, true);
+    }
+    if (RS.prefs && RS.prefs.art_off) return;
+    RS.store.get(SONGS, []).forEach(x => { if (!x.url && x.artist && x.title) queueCover(x); });
+  }
+  function queueCover(x, broken) {
+    const k = songKey(x); if (tried.has(k) || (RS.prefs && RS.prefs.art_off) || !x.title || !x.artist) return;
+    tried.add(k); coverQ.push({ k, broken }); if (!coverBusy) nextCover();
+  }
+  async function nextCover() {
+    const job = coverQ.shift(); if (!job) { coverBusy = false; return; }
+    coverBusy = true;
+    const find = () => RS.store.get(SONGS, []).findIndex(y => songKey(y) === job.k);
+    let L = RS.store.get(SONGS, []), i = find(), x = L[i];
+    if (x) {
+      let r = null; try { r = await RS.api('art?q=' + encodeURIComponent(x.artist + ' - ' + x.title)); } catch (e) { }
+      L = RS.store.get(SONGS, []); i = find();
+      if (i >= 0) {
+        if (r && r.art) {
+          L[i].url = r.art; if (r.track && !L[i].track) L[i].track = r.track; RS.store.set(SONGS, L);
+          const row = RS.$$('#rd-list .rdp-song').find(e => e.dataset.sk === job.k), ph = row && row.querySelector('.rdp-song-ph');
+          if (ph) { const im = new Image(44, 44); im.alt = ''; im.loading = 'lazy'; im.dataset.song = String(i); im.src = r.art; ph.replaceWith(im); }
+        }
+        else if (job.broken) { L[i].url = ''; RS.store.set(SONGS, L); }       // nothing to put back: keep the placeholder
+      }
+    }
+    setTimeout(nextCover, 1500);
+  }
   RS.act['rd-song'] = b => { const s = RS.store.get(SONGS, [])[+b.dataset.i]; if (s && RS.art && RS.art.openIn) RS.art.openIn(s); };
   RS.act['rd-songs-clear'] = () => RS.confirm('Clear the song list?', 'The songs heard so far are forgotten on this device.', 'Clear', () => { RS.store.set(SONGS, []); P.lists(true); });
 
   // song history: each new song the cover lookup recognises (one entry per song per station; most recent first)
   function songHeard() {
-    const c = RS.art && RS.art.cur; if (!c || !c.title) return;
+    const c = RS.art && (RS.art.cur || RS.art.song); if (!c || !c.title) return;   // with its cover, or without when none was found
     const L = RS.store.get(SONGS, []), f = RS.vfo(), station = stationName(f, 'wfm') || RS.fmt(f, 'wfm');
     if (L[0] && L[0].title === c.title && L[0].artist === c.artist) return;
     const keep = L.filter(x => !(x.title === c.title && x.artist === c.artist && Date.now() / 1000 - x.t < 3600));
@@ -1020,7 +1067,7 @@
         if (!f || f < 0.1e6 || f > 1.75e9) { el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake'); setTimeout(() => el.classList.remove('shake'), 400); RS.toast('That is not a frequency the radio can reach (about 0.5 MHz to 1.7 GHz). Try something like 100.0 or 7074 k.', 'bad'); return; }
         apply(f);
       };
-      inp.addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') { e.preventDefault(); end(true); } else if (e.key === 'Escape') { e.preventDefault(); end(false); } });
+      inp.addEventListener('keydown', e => { e.stopPropagation(); if (RS.isEnter(e)) { e.preventDefault(); end(true); } else if (e.key === 'Escape') { e.preventDefault(); end(false); } });
       inp.addEventListener('blur', () => end(true));
       inp.addEventListener('click', e => e.stopPropagation());
     };

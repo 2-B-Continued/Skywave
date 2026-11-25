@@ -112,6 +112,72 @@ def _emf(url, limit, accept):
     return b"\xff\xd8" + b"0" * 2000, "image/jpeg"
 _r = art.lookup("The Killing Moon - Echo and the Bunnymen", fetch=_emf, country="GB")
 check("the original album is chosen over a compilation", bool(_r) and _r["album"] == "Ocean Rain", _r)
+def _rr(coll, date, genre="Rock", artist="", track=""):
+    return {"artistName": artist, "trackName": track, "collectionName": coll, "releaseDate": date, "primaryGenreName": genre,
+            "collectionId": abs(hash(coll)) % 10**8, "artworkUrl100": "https://x.mzstatic.com/a/100x100bb.jpg"}
+# the studio recording over a live one, even when the live one is older or listed first
+U = dict(artist="UB40", track="I Got You Babe")
+res = [_rr("Live in New Zealand", "1983-01-01T08:00:00Z", **U), _rr("Baggariddim", "1985-01-01T08:00:00Z", **U),
+       dict(_rr("Labour of Love II", "1989-01-01T08:00:00Z", **U), trackName="I Got You Babe (Live)")]
+g = art.pick(res, "UB40", "I Got You Babe"); check("the studio recording beats live ones", g and g["collectionName"] == "Baggariddim", g)
+g = art.pick(res, "UB40", "I Got You Babe", live=True); check("unless the station says it's live", g and g["collectionName"] == "Live in New Zealand", g)
+g = art.pick([_rr("Live in New Zealand", "1983-01-01T08:00:00Z", **U)], "UB40", "I Got You Babe"); check("a live version when it's all there is", g and g["collectionName"].startswith("Live"), g)
+g = art.pick([_rr("Red Rose Speedway", "1973-01-01T08:00:00Z", artist="Wings", track="Live and Let Die"),
+              _rr("Wings Over America (Live)", "1976-01-01T08:00:00Z", artist="Wings", track="Live and Let Die")], "Wings", "Live and Let Die")
+check("a song with 'live' in its name is not taken for a live version", g and g["collectionName"] == "Red Rose Speedway", g)
+
+# when Apple is refusing requests, or has nothing, the other sources answer
+import urllib.error
+art._text.clear()
+seen = []
+def busy(url, limit, accept):
+    seen.append(url)
+    if "itunes.apple.com" in url:
+        raise urllib.error.HTTPError(url, 403, "Forbidden", {}, None)
+    if "api.deezer.com/search" in url:
+        return json.dumps({"data": [
+            {"title": "I Got You Babe", "title_version": "(Live)", "artist": {"name": "UB40"}, "album": {"title": "Live at the Royal Albert Hall", "cover_xl": "https://e-cdns-images.dzcdn.net/images/cover/live/1000x1000.jpg"}},
+            {"title": "I Got You Babe", "artist": {"name": "UB40"}, "album": {"title": "Baggariddim", "cover_xl": "https://e-cdns-images.dzcdn.net/images/cover/studio/1000x1000.jpg"}}]}).encode(), "application/json"
+    return b"\xff\xd8" + b"0" * 2000, "image/jpeg"
+r = art.lookup("UB40 - I Got You Babe", busy, "AU")
+check("Apple refusing: Deezer's studio cover instead", r and r["source"] == "Deezer" and r["album"] == "Baggariddim" and any("/studio/" in u for u in seen), r)
+n = len([u for u in seen if "itunes" in u]); art._text.clear(); art.lookup("UB40 - Red Red Wine", busy, "AU")
+check("Apple is left alone for a while after refusing", len([u for u in seen if "itunes" in u]) == n)
+art._apple_until[0] = 0
+art._text.clear()
+def mb(url, limit, accept):
+    if "itunes.apple.com" in url:
+        return b'{"results": []}', "application/json"
+    if "api.deezer.com" in url:
+        return b'{"data": []}', "application/json"
+    if "musicbrainz.org" in url:
+        return json.dumps({"recordings": [{"title": "I Got You Babe", "artist-credit": [{"name": "UB40", "joinphrase": " & "}, {"name": "Chrissie Hynde"}], "releases": [
+            {"id": "rel-live", "title": "Live", "status": "Official", "date": "1984", "release-group": {"id": "rg-live", "primary-type": "Album", "secondary-types": ["Live"]}},
+            {"id": "rel-best", "title": "The Best Of", "status": "Official", "date": "1987", "release-group": {"id": "rg-best", "primary-type": "Album", "secondary-types": ["Compilation"]}},
+            {"id": "rel-single", "title": "I Got You Babe", "status": "Official", "date": "1985-07", "release-group": {"id": "rg-single", "primary-type": "Single"}}]}]}).encode(), "application/json"
+    if "coverartarchive.org/release-group/rg-single" in url:
+        return b"\xff\xd8" + b"1" * 2000, "image/jpeg"
+    raise urllib.error.HTTPError(url, 404, "Not Found", {}, None)
+r = art.lookup("UB40 - I Got You Babe", mb, "AU")
+check("nothing on Apple or Deezer: MusicBrainz and the Cover Art Archive, the studio release", r and r["source"] == "MusicBrainz" and r["album"] == "I Got You Babe", r)
+art._text.clear()
+check("all sources down: nothing, and not remembered", art.lookup("UB40 - I Got You Babe", offline) is None and not art._text)
+
+# covers kept on disk: a song list saved in a browser still gets its picture after a restart; the folder stays bounded
+import tempfile
+d = tempfile.mkdtemp()
+art.set_store(d)
+jpg = b"\xff\xd8\xff" + b"1" * 900
+got = art._keep("https://is1-ssl.mzstatic.com/x/600x600bb.jpg", {"artist": "A", "title": "B"}, lambda u, l, a: (jpg, "image/jpeg"))
+check("cover written to disk", got and any(n.endswith(".jpg") for n in os.listdir(d)), os.listdir(d))
+art._img.clear()                                   # as after a restart
+im = art.image(got["id"])
+check("cover served from disk after a restart", im == ("image/jpeg", jpg), im and im[0])
+check("bad ids are refused", art.image("../../etc") is None and art.image("") is None)
+art.MAX_DISK = 3
+for k in range(6):
+    art._keep("https://is1-ssl.mzstatic.com/y/%d.jpg" % k, {}, lambda u, l, a: (jpg, "image/jpeg"))
+check("disk keeps at most MAX_DISK covers", len([n for n in os.listdir(d) if n.endswith(".jpg")]) == 3, os.listdir(d))
 print("ALL PASS" if ok else "SOME FAILED"); sys.exit(0 if ok else 1)
 
 

@@ -5,7 +5,7 @@ const { chromium } = require('playwright'); const { spawn } = require('child_pro
   const srv = spawn('python3', ['-W', 'ignore', 'server.py'], { cwd: path.join(__dirname, '..'), env: { ...process.env, SIM: '1', PORT: '18131', DATA_DIR: d, NO_NET: '1', SETUP_DONE: '1' } });
   await new Promise(r => setTimeout(r, 4000));
   const b = await chromium.launch(), errs = [], hashes = {};
-  const SET = [['terminal', 'neon'], ['classic', ''], ['lumen', 'violet'], ['bento', 'porcelain'], ['folio', 'swiss'], ['aurora', 'obsidian']];
+  const SET = [['terminal', 'neon'], ['depth', 'midnight'], ['relief', 'clay'], ['walnut', 'autumn'], ['riot', 'carnival'], ['bento', 'porcelain'], ['folio', 'swiss']];
   for (const [nm, vp] of [['d', { width: 1280, height: 860 }], ['m', { width: 390, height: 800 }]]) {
     const p = await (await b.newContext({ viewport: vp })).newPage(); p.on('pageerror', e => errs.push(e.message));
     await p.goto('http://127.0.0.1:18131/#radio'); await p.waitForTimeout(2500);

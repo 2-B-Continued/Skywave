@@ -6,7 +6,7 @@ const { chromium } = require('playwright'); const { spawn } = require('child_pro
   await new Promise(r => setTimeout(r, 4000));
   let ok = true; const bad = []; const errs = [];
   const b = await chromium.launch();
-  const SET = [['lumen', 'violet'], ['bento', 'porcelain'], ['folio', 'swiss'], ['aurora', 'obsidian']];
+  const SET = [['depth', 'midnight'], ['relief', 'clay'], ['walnut', 'autumn'], ['riot', 'carnival'], ['bento', 'porcelain'], ['folio', 'swiss']];
   const PAGES = ['home', 'radio', 'scanner', 'planes', 'ships', 'space', 'ham', 'sensors', 'explore', 'library', 'settings'];
   for (const [name, vp] of [['d', { width: 1280, height: 860 }], ['m', { width: 390, height: 800 }]]) {
     const p = await (await b.newContext({ viewport: vp })).newPage(); p.on('pageerror', e => errs.push(e.message));

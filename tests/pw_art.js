@@ -7,7 +7,9 @@ const { chromium } = require('playwright'); const { spawn } = require('child_pro
   let ok = true; const chk = (n, c, x) => { console.log(c ? 'ok  ' : 'FAIL', n, x === undefined ? '' : JSON.stringify(x)); if (!c) ok = false; };
   const b = await chromium.launch(); const ctx = await b.newContext({ viewport: { width: 1280, height: 860 } }); const p = await ctx.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message));
   const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64'); const asked = [];
-  await p.route('**/api/art?*', r => { asked.push(decodeURIComponent(r.request().url().split('q=')[1])); r.fulfill({ json: { art: '/api/artimg/test', artist: 'Dua Lipa', title: 'Houdini', album: 'Radical Optimism' } }); });
+  await p.route('**/api/art?*', r => { const u = decodeURIComponent(r.request().url().split('q=')[1]); asked.push(u);
+    if (/parse=1/.test(u) || /^UB40/.test(u)) return r.fulfill({ json: { art: null, artist: 'UB40', title: 'I Got You Babe', album: '', song: true } });   // no cover anywhere
+    r.fulfill({ json: { art: '/api/artimg/test', artist: 'Dua Lipa', title: 'Houdini', album: 'Radical Optimism' } }); });
   await p.route('**/api/artimg/test', r => r.fulfill({ body: PNG, contentType: 'image/png' }));
   await p.goto('http://127.0.0.1:18122/#radio'); await p.waitForTimeout(2500);
   await p.evaluate(() => { RS.tune(100.0e6, { mode: 'wfm' }); });
@@ -19,12 +21,16 @@ const { chromium } = require('playwright'); const { spawn } = require('child_pro
   chk('bottom bar shows the art', await p.isVisible('#sb-art'));
   await say('Win a trip! Text 1800 123 456'); await p.waitForTimeout(300);
   chk('art clears when the text changes', !(await p.isVisible('#rd-art')));
+  await say('UB40 - I Got You Babe'); await p.waitForTimeout(2200);
+  const songs = await p.evaluate(() => RS.store.get('rs_songs', null) || Object.keys(localStorage).filter(k => /song/i.test(k)).map(k => localStorage.getItem(k)));
+  chk('a song with no cover anywhere still goes on the songs heard list', JSON.stringify(songs).includes('I Got You Babe'), songs);
+  chk('and shows no picture', !(await p.isVisible('#rd-art')));
   await p.goto('http://127.0.0.1:18122/#settings'); await p.waitForTimeout(2000);
   chk('switch exists and is on', await p.isChecked('#st-art-on'));
   await p.uncheck('#st-art-on'); await p.waitForTimeout(300);
   asked.length = 0; await p.evaluate(() => { location.hash = 'radio'; RS.go('radio'); }); await p.waitForTimeout(500);
   await say('Dua Lipa - Houdini'); await p.waitForTimeout(2200);
-  chk('switched off means no lookup', asked.length === 0, asked);
+  chk('switched off means no lookup, only reading the song out of the text', asked.length > 0 && asked.every(a => /parse=1/.test(a)), asked);
   chk('no page errors', errs.length === 0, errs);
   await b.close(); srv.kill(); console.log(ok ? 'PASS' : 'FAIL'); process.exit(ok ? 0 : 1);
 })();

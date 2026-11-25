@@ -86,6 +86,11 @@ class Client:
                 pass
 
 
+# Sent on the sound sockets just before the first sound from a new frequency or mode: the player drops whatever it still
+# holds from before and starts the new sound straight away.
+NEW_STATION = b"\x05"
+
+
 class AudioClient(Client):
     """A page's sound socket (/ws?audio=1). It gets only sound, and keeps up to 1.5 s of it queued: the player on the page has
     its own cushion and handles a burst far better than a hole, so only a backlog longer than 0.5 s is trimmed (oldest first)."""
@@ -101,6 +106,13 @@ class AudioClient(Client):
         if not isinstance(item, bytes):
             return
         with self.lock:
+            if item == NEW_STATION:                    # the old station's sound still waiting here is no longer wanted
+                while True:
+                    try:
+                        self.q.get_nowait()
+                    except queue.Empty:
+                        break
+                self.queued = 0
             self.q.put_nowait(item)
             self.queued += len(item)
             while self.queued > self.LIMIT:
@@ -262,6 +274,7 @@ class Engine(threading.Thread):
         self.gate = True
         self._gate_until = 0.0
         self.discard_until = 0.0
+        self._new_station = False
         self.tick = 0
         self.last_state = 0.0
         self.last_client_seen = time.time()
@@ -333,7 +346,7 @@ class Engine(threading.Thread):
 
     def broadcast(self, item):
         """Sound frames (type 2 mono, 3 stereo) go only to sound sockets; everything else only to page sockets."""
-        sound = isinstance(item, bytes) and item[:1] in (b"\x02", b"\x03")
+        sound = isinstance(item, bytes) and item[:1] in (b"\x02", b"\x03", NEW_STATION)
         with self.cl_lock:
             cl = [c for c in self.clients if isinstance(c, AudioClient) == sound]
         for c in cl:
@@ -468,6 +481,10 @@ class Engine(threading.Thread):
             try:
                 self._apply_hf()
                 self.src.set_freq(self.center)
+                # samples from the old frequency already waiting on the connection are dropped at once, rather than
+                # waited out; only the tuner's settling time is left to discard
+                if hasattr(self.src, "backlog") and hasattr(self.src, "skip"):
+                    self.src.skip(self.src.backlog())
             except sources.SourceError as e:
                 self._fail(str(e))
                 return
@@ -493,6 +510,8 @@ class Engine(threading.Thread):
             self.aprs_dec = afsk.AfskDecoder()
 
     def set_mode_raw(self, mode, bw=None):
+        if mode not in dsp.MODES:                 # it ends up in file names and on every page: known modes only
+            return
         self.mode = mode
         self.bw = float(bw or dsp.DEFAULT_BW[mode])
         if self.rx:
@@ -516,6 +535,8 @@ class Engine(threading.Thread):
 
     def _do_cmd(self, c):
         cmd = c.get("cmd")
+        if cmd in ("tune", "center", "mode", "tap", "preset", "scan", "seek"):
+            self._new_station = True
         if cmd == "tune":
             self._to_listen()
             if not c.get("keep_doppler"):
@@ -1202,6 +1223,8 @@ class Engine(threading.Thread):
             self.adsb_rate = (0, time.time(), 0)
         elif name == "ism":
             self._close_source()
+            if self.cfg.get("rtl_tcp"):
+                time.sleep(0.4)                     # rtl_tcp takes a moment to accept a new client after ours leaves
             self._ism_start(params)
         elif name == "health":
             self._close_source()
@@ -1467,6 +1490,9 @@ class Engine(threading.Thread):
         if self.sched_audio is not None and in_window and self.snr > self.sched_audio.get("peak", -99.0):
             self.sched_audio["peak"] = self.snr
         out = audio if gate else np.zeros_like(audio)
+        if self._new_station:                       # first sound since a retune: tell the players
+            self._new_station = False
+            self.broadcast(NEW_STATION)
         pcm = dsp.to_pcm16(out)
         if self.udp is not None:
             self.udp.send(out)
@@ -2043,7 +2069,10 @@ class Engine(threading.Thread):
             if len(freqs) > 1:
                 fl += ["-H", str(int(params.get("hop_s") or 60))]           # switch between them every minute
                 freq = freqs[0]
-            argv = shlex.split(exe) + ["-d", str(self.cfg["devices"].get("radio", 0))] + fl + ["-F", "json", "-M", "time:iso:utc", "-M", "level"]
+            # the dongle on another computer (RTL_TCP): rtl_433 reads from that rtl_tcp server itself, no USB needed here
+            remote = self.cfg.get("rtl_tcp") or ""
+            dev = sources.remote_device(remote) if remote else str(self.cfg["devices"].get("radio", 0))
+            argv = shlex.split(exe) + ["-d", dev] + fl + ["-F", "json", "-M", "time:iso:utc", "-M", "level"]
             if not self.cfg["gain_auto"]:
                 argv += ["-g", str(int(self.cfg["gain_db"]))]
         try:
@@ -2079,9 +2108,16 @@ class Engine(threading.Thread):
         self.emit("sensors_started", freq=freq)
 
     def _amr_argv(self, freq):
-        """US utility meters via rtlamr: it talks to an rtl_tcp server, so start one on the dongle first."""
+        """US utility meters via rtlamr: it talks to an rtl_tcp server. With the dongle on another computer (RTL_TCP)
+        it uses that server directly; otherwise one is started on the dongle here first."""
         exe = shlex.split(os.environ.get("RTLAMR_BIN", "rtlamr"))
         tcp = shlex.split(os.environ.get("RTL_TCP_BIN", "rtl_tcp"))
+        remote = self.cfg.get("rtl_tcp") or ""
+        if remote and shutil.which(exe[0]):
+            freq = 912.6e6 if not 902e6 <= freq <= 928e6 else freq
+            host, port = sources.remote_addr(remote)
+            server = ("[%s]:%d" if ":" in host else "%s:%d") % (host, port)
+            return exe + ["-server=" + server, "-format=json", "-msgtype=scm,scm+,idm,r900", "-centerfreq=%d" % int(freq), "-unique=true"], None, freq
         if not (shutil.which(exe[0]) and shutil.which(tcp[0])):
             self._fallback_to_listen()
             self.error = ""
@@ -2132,7 +2168,7 @@ class Engine(threading.Thread):
         except queue.Empty:
             line = None
         if im["proc"].poll() is not None and im["q"].empty():
-            msg = "The sensor decoder stopped. " + sources.explain_failure(list(im["err"])) if im["err"] else "The sensor decoder stopped."
+            msg = ("The sensor decoder stopped. " + sources.explain_failure(list(im["err"]), self.cfg.get("rtl_tcp") or None)) if im["err"] else "The sensor decoder stopped."
             self.ism = None
             self._fallback_to_listen()
             self.notice(msg, "error")

@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   const RS = window.RS, $ = RS.$, esc = RS.esc;
-  const A = RS.art = { cur: null, rt: '', f: 0, t: null };
+  const A = RS.art = { cur: null, song: null, rt: '', f: 0, t: null };   // cur: the song with its cover; song: the song, cover or not
   const on = () => !(RS.prefs && RS.prefs.art_off);
   // the cover's own colour, so the player and the dial light up in it (only when the image server allows it to be read)
   function tint(url) {
@@ -54,14 +54,15 @@
     RS.fire('art');
   }
   A.paint = paint;
-  function clear() { clearTimeout(A.t); if (A.cur) { A.cur = null; paint(); } }
+  function clear() { clearTimeout(A.t); A.song = null; if (A.cur) { A.cur = null; paint(); } }
   function check() {
     const st = RS.st || {}, rd = st.rds, m = RS.curMode && RS.curMode();
-    const rt = (on() && m === 'wfm' && st.job === 'listen' && rd && rd.rt) ? String(rd.rt).trim() : '';
+    // with cover art turned off, the song is still read from the text (here, on the Skywave computer) for the songs list
+    const rt = (m === 'wfm' && st.job === 'listen' && rd && rd.rt) ? String(rd.rt).trim() : '';
     const f = Math.round((RS.vfo ? RS.vfo() : 0) / 1e4);
     if (!rt || f !== A.f) {
       // RadioText can drop out for a moment on a weak station; keep the picture through that, but not through a retune
-      if (f !== A.f || !on()) { clearTimeout(A.gone); A.gone = null; A.rt = ''; A.f = f; clear(); return; }
+      if (f !== A.f) { clearTimeout(A.gone); A.gone = null; A.rt = ''; A.f = f; clear(); return; }
       if (A.rt && !A.gone) A.gone = setTimeout(() => { A.gone = null; A.rt = ''; clear(); }, 4000);
       return;
     }
@@ -70,8 +71,10 @@
     A.rt = rt; A.f = f; clear();
     A.t = setTimeout(async () => {                                 // RadioText is settled once it has stopped changing for a moment
       try {
-        const r = await RS.api('art?q=' + encodeURIComponent(rt) + '&cc=' + ccHint());
-        if (r.art && A.rt === rt && on()) { A.cur = { url: r.art, artist: r.artist, title: r.title, album: r.album, rt, track: r.track || null }; paint(); }
+        const r = await RS.api('art?q=' + encodeURIComponent(rt) + '&cc=' + ccHint() + (on() ? '' : '&parse=1'));
+        if (A.rt !== rt) return;
+        if (r.art && on()) { A.cur = A.song = { url: r.art, artist: r.artist, title: r.title, album: r.album, rt, track: r.track || null }; paint(); }
+        else if (r.title && r.artist) { A.song = { url: '', artist: r.artist, title: r.title, album: '', rt, track: null }; RS.fire('art'); }
       } catch (e) { }
     }, 1200);
   }
@@ -119,7 +122,7 @@
     if (!el) return;
     el.innerHTML = '<h3>Album art</h3><div class="sub">FM stations send only text, not pictures. When a station says what song is playing, Skywave looks up the cover art and shows it on the Radio page, in the bottom bar and on your lock screen.</div>' +
       '<label class="check"><input type="checkbox" id="st-art-on"' + (on() ? ' checked' : '') + '><span>Look up cover art for songs</span></label>' +
-      '<div class="small muted" style="margin-top:6px">This sends only the song text (for example "Artist - Title") to Apple\'s public music search, from the computer running Skywave. Your country is sent as two letters (for example AU), so the songs and links match what is available where you are; nothing else about you is sent. Pressing a cover looks the song up on Apple Music and Deezer to link to it. Turn it off if you prefer nothing leaves your network.</div>';
+      '<div class="small muted" style="margin-top:6px">This sends only the song text (for example "Artist - Title") to Apple\'s public music search, from the computer running Skywave; when Apple has nothing, Deezer and then MusicBrainz with the Cover Art Archive are asked instead. Your country is sent as two letters (for example AU), so the songs and links match what is available where you are; nothing else about you is sent. Pressing a cover looks the song up on Apple Music and Deezer to link to it. Turn it off if you prefer nothing leaves your network.</div>';
     $('#st-art-on').onchange = e => { RS.setPref('art_off', !e.target.checked); if (!e.target.checked) clear(); else check(); };
   };
 })();

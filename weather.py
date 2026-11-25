@@ -148,19 +148,34 @@ class Decoder:
         out.sort(key=lambda r: -(r.get("t0") or r.get("created") or 0))
         return out
 
+    def _dir(self, did):
+        """The folder of one decode. An id is a single plain name: never empty, never "." or "..", which would
+        otherwise point at the decoded folder itself or the whole data folder above it."""
+        did = str(did or "")
+        d = os.path.join(self.root, did)
+        root = os.path.realpath(self.root)
+        if (did in ("", ".", "..") or os.path.basename(did) != did or "\\" in did or "\x00" in did
+                or os.path.dirname(os.path.realpath(d)) != root):
+            raise ValueError("No such decode.")
+        return d
+
     def delete(self, did):
-        did = os.path.basename(did)
+        d = self._dir(did)
+        did = os.path.basename(d)
         with self.lock:
             if did in self.jobs:
                 raise ValueError("That one is still being worked on.")
-        shutil.rmtree(os.path.join(self.root, did), ignore_errors=True)
+        shutil.rmtree(d, ignore_errors=True)
 
     def file_path(self, did, name):
-        p = os.path.join(self.root, os.path.basename(did), os.path.basename(name))
+        try:
+            p = os.path.join(self._dir(did), os.path.basename(name))
+        except ValueError:
+            return None
         return p if os.path.isfile(p) else None
 
     def rebuild_report(self, did):
-        d = os.path.join(self.root, os.path.basename(did))
+        d = self._dir(did)
         with open(os.path.join(d, "result.json")) as f:
             res = json.load(f)
         res["report"] = self._make_sstv_pdf(d, res) if res.get("kind") == "sstv" else self._make_pdf(d, res)

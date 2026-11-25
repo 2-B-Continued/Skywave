@@ -20,19 +20,65 @@
     return n && n !== code ? n : english[code] || code;
   };
   const listOf = (items, lang) => { try { return new Intl.ListFormat([lang, 'en'], { type: 'conjunction' }).format(items); } catch (e) { return items.join(', '); } };
-  function countryOptions(lang) {
-    const coll = new Intl.Collator([lang, 'en']);
-    let html = '<option value="">' + esc(RS.t('Not sure')) + '</option>';
-    const groups = entries().filter(e => (e.countries || []).length);
-    groups.sort((a, b) => (a.id === 'intl') - (b.id === 'intl'));
+  // Every country, A to Z in the reader's language, for the searchable country list
+  function countryList(lang) {
+    const coll = new Intl.Collator([lang, 'en']), out = [];
     Object.assign(english, (RS.region && RS.region.areas) || {});
-    for (const e of groups) {
-      e.countries.forEach(c => { english[c[0]] = c[1]; });
-      const label = e.id === 'intl' ? RS.t('Other places') : listOf(e.label.map(c => nameOf(c, lang)), lang);
-      const opts = e.countries.map(c => [c[0], nameOf(c[0], lang)]).sort((a, b) => coll.compare(a[1], b[1]));
-      html += '<optgroup label="' + esc(label) + '">' + opts.map(o => '<option value="' + o[0] + '">' + esc(o[1]) + '</option>').join('') + '</optgroup>';
-    }
-    return html;
+    for (const e of entries()) for (const c of e.countries || []) { english[c[0]] = c[1]; out.push({ cc: c[0], name: nameOf(c[0], lang), en: c[1] }); }
+    return out.sort((a, b) => coll.compare(a.name, b.name));
+  }
+  // accents and case don't matter when searching ("reunion" finds Réunion, "cote" finds Côte d'Ivoire)
+  const fold = t => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
+
+  // A text box you can type a country into, with the full A to Z list under it. Typing narrows the list (by its name in
+  // your language, its English name or its two-letter code); arrow keys, Enter and Escape work as in any list box.
+  function countryPicker(id, lang, onPick) {
+    const inp = $('#' + id + '-cq'), list = $('#' + id + '-cl'), val = $('#' + id + '-region');
+    let all = countryList(lang), shown = [], act = -1;
+    const none = { cc: '', name: RS.t('Not sure'), en: 'Not sure' };
+    const nameFor = cc => (all.find(x => x.cc === cc) || none).name;
+    const mark = i => {
+      const rows = list.querySelectorAll('[role="option"]');
+      act = Math.max(0, Math.min(rows.length - 1, i));
+      rows.forEach((r, k) => r.setAttribute('aria-selected', String(k === act)));
+      if (rows[act]) { inp.setAttribute('aria-activedescendant', rows[act].id); rows[act].scrollIntoView({ block: 'nearest' }); }
+    };
+    const draw = text => {
+      const t = fold(text);
+      if (!t) shown = [none].concat(all);
+      else {
+        // best first: the exact code or name, then names that start with what you typed, then a word in the name that
+        // does, then names that contain it anywhere; A to Z within each
+        const names = x => [fold(x.name), fold(x.en)];
+        const rank = x => x.cc.toLowerCase() === t || names(x).includes(t) ? 0 : names(x).some(h => h.startsWith(t)) ? 1
+          : names(x).some(h => h.split(' ').some(w => w.startsWith(t))) ? 2 : names(x).some(h => h.includes(t)) ? 3 : 9;
+        shown = all.map(x => [rank(x), x]).filter(r => r[0] < 9).sort((a, b) => a[0] - b[0]).map(r => r[1]);
+      }
+      list.innerHTML = shown.length ? shown.map((x, i) => '<button type="button" class="locp-row" role="option" tabindex="-1" aria-selected="false" id="' + id + '-co' + i + '" data-i="' + i + '"><span class="locp-t"><b>' + esc(x.name) + '</b>' +
+        (x.en && fold(x.en) !== fold(x.name) ? '<small>' + esc(x.en) + '</small>' : '') + '</span>' + (x.cc ? '<span class="locp-cc">' + x.cc + '</span>' : '') + '</button>').join('')
+        : '<div class="locp-msg">No country matches "' + esc(text) + '"</div>';
+      list.querySelectorAll('[role="option"]').forEach(b => { b.onmousedown = e => { e.preventDefault(); pick(+b.dataset.i); }; b.onmouseenter = () => mark(+b.dataset.i); });
+      const cur = shown.findIndex(x => x.cc === val.value);
+      act = -1; if (shown.length) mark(t ? 0 : Math.max(0, cur));
+    };
+    const open = () => { if (!list.hidden) return; list.hidden = false; inp.setAttribute('aria-expanded', 'true'); draw(inp.value === nameFor(val.value) ? '' : inp.value); };
+    const close = () => { list.hidden = true; inp.setAttribute('aria-expanded', 'false'); inp.removeAttribute('aria-activedescendant'); inp.value = val.value ? nameFor(val.value) : ''; };
+    const pick = i => { const x = shown[i]; if (!x) return; val.value = x.cc; close(); onPick(x.cc); };
+    inp.onfocus = () => { inp.select(); open(); };
+    inp.onclick = open;
+    inp.oninput = () => { if (list.hidden) { list.hidden = false; inp.setAttribute('aria-expanded', 'true'); } draw(inp.value); };
+    inp.onblur = () => setTimeout(() => { if (document.activeElement !== inp) close(); }, 120);
+    inp.onkeydown = e => {
+      if (e.key === 'ArrowDown') { e.preventDefault(); if (list.hidden) open(); else mark(act + 1); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); if (!list.hidden) mark(act - 1); }
+      else if (RS.isEnter(e)) { if (!list.hidden && act >= 0) { e.preventDefault(); pick(act); } }
+      else if (e.key === 'Escape' && !list.hidden) { e.preventDefault(); e.stopPropagation(); close(); }
+    };
+    $('#' + id + '-cbtn').onmousedown = e => { e.preventDefault(); if (list.hidden) { inp.focus(); } else close(); };
+    return {
+      set: cc => { val.value = cc || ''; inp.value = cc ? nameFor(cc) : ''; },
+      relabel: l => { all = countryList(l); none.name = RS.t('Not sure'); inp.value = val.value ? nameFor(val.value) : ''; if (!list.hidden) draw(''); }
+    };
   }
   // the country a browser's language tag names (en-AU -> AU), when it is one Skywave knows
   const browserCountry = () => { const m = /-([A-Z]{2})\b/.exec(navigator.language || ''); return m && countryInfo(m[1]).region !== 'intl' ? m[1] : ''; };
@@ -45,13 +91,17 @@
     const langs = (RS.langs.length ? RS.langs : [{ code: 'en', name: 'English' }]).map(l => { const en = enName(l.code);
       return '<option value="' + esc(l.code) + '">' + esc(l.name) + (en && en.toLowerCase() !== l.name.toLowerCase() ? ' (' + esc(en) + ')' : '') + '</option>'; }).join('');
     return '<label class="field">Language<select id="' + id + '-lang">' + langs + '</select></label>' +
-      '<label class="field">Country or region<select id="' + id + '-region">' + countryOptions(RS.lang || 'en') + '</select><span class="hint">This picks the right channel lists (walkie-talkies, CB), FM and AM tuning steps, and the APRS frequency for where you are. Countries that share the same radio rules are grouped together.</span></label>' +
+      '<div class="field cpick"><label for="' + id + '-cq">Country or region</label>' +
+      '<div class="locp-in cpick-in">' + RS.icon('search') + '<input id="' + id + '-cq" type="text" placeholder="Type to search, or pick from the list" autocomplete="off" spellcheck="false" role="combobox" aria-expanded="false" aria-controls="' + id + '-cl" aria-autocomplete="list">' +
+      '<button type="button" class="cpick-btn" id="' + id + '-cbtn" tabindex="-1" aria-label="Show every country">' + RS.icon('down') + '</button></div>' +
+      '<div id="' + id + '-cl" class="locp-res cpick-list" role="listbox" aria-label="Countries" hidden></div><input type="hidden" id="' + id + '-region">' +
+      '<span class="hint">Every country, A to Z. This picks the right channel lists (walkie-talkies, CB), FM and AM tuning steps, and the APRS frequency for where you are.</span></div>' +
       '<div class="field locp"><label for="' + id + '-q">Where are you?</label>' +
       '<div class="locp-now" id="' + id + '-picked" aria-live="polite"></div>' +
       '<div class="locp-bar"><span class="locp-in">' + RS.icon('search') + '<input id="' + id + '-q" type="search" placeholder="Town, suburb or postcode" autocomplete="off" enterkeyhint="search" role="combobox" aria-expanded="false" aria-controls="' + id + '-res" aria-autocomplete="list"></span>' +
-      '<button class="btn primary" type="button" id="' + id + '-find">Search</button><button class="btn" type="button" id="' + id + '-gps" title="Ask this browser where you are">' + RS.icon('compass') + '<span>Use my location</span></button></div>' +
+      '<button class="btn primary" type="button" id="' + id + '-find">Search</button></div>' +
       '<div id="' + id + '-res" class="locp-res" role="listbox" aria-label="Places found" hidden></div>' +
-      '<span class="hint">For the plane map, satellite passes and distances. Try a town, a postcode, or a town with its state or country. Only the words you type are sent, to Open-Meteo and OpenStreetMap.</span></div>' +
+      '<span class="hint">For the plane map, satellite passes and distances. Try a town, a postcode, or a town with its state. Only places in your chosen country are shown, unless you type another country. Only the words you type are sent, to Open-Meteo and OpenStreetMap.</span></div>' +
       '<details class="more"><summary>Enter coordinates by hand</summary><div class="row tight" style="margin-top:8px"><label class="field" style="flex:1">Latitude<input id="' + id + '-lat" inputmode="decimal" placeholder="e.g. 51.5074"></label><label class="field" style="flex:1">Longitude<input id="' + id + '-lon" inputmode="decimal" placeholder="e.g. -0.1278"></label><label class="field" style="flex:1">Height above sea level (m)<input id="' + id + '-alt" inputmode="decimal" placeholder="0"></label></div></details>' +
       '<div class="field"><label>Units</label><div class="seg locp-units" role="group" aria-label="Units"><button type="button" data-u="metric" id="' + id + '-um">Metric: km, °C</button><button type="button" data-u="imperial" id="' + id + '-ui">Imperial: miles, °F</button></div></div>' +
       '<div class="small muted" id="' + id + '-tz"></div>';
@@ -60,7 +110,7 @@
   function wire(id, init) {
     const st = { lat: init.lat, lon: init.lon, alt: init.alt, tz: init.tz || browserTz(), country: init.country || '', lang: init.lang, units: init.units, placed: !!init.placed, place: init.place || '' };
     const q = s => $('#' + id + '-' + s);
-    q('lang').value = st.lang; q('region').value = st.country;
+    q('lang').value = st.lang;
     const units = () => ['um', 'ui'].forEach(k => q(k).setAttribute('aria-pressed', String(q(k).dataset.u === st.units)));
     ['um', 'ui'].forEach(k => q(k).onclick = () => { st.units = q(k).dataset.u; init.unitsTouched = true; units(); });
     units();
@@ -75,10 +125,12 @@
     showPicked();
     q('lang').onchange = async e => {
       st.lang = e.target.value; await RS.setLang(st.lang, true);
-      q('region').innerHTML = countryOptions(st.lang); q('region').value = st.country;
+      cp.relabel(st.lang);
     };
-    const setCountry = cc => { st.country = cc; q('region').value = cc; if (!init.unitsTouched) { st.units = countryInfo(cc).units; units(); } };
-    q('region').onchange = e => setCountry(e.target.value);
+    const chosen = cc => { st.country = cc; if (!init.unitsTouched) { st.units = countryInfo(cc).units; units(); } };
+    const cp = countryPicker(id, st.lang || RS.lang || 'en', chosen);
+    cp.set(st.country);
+    const setCountry = cc => { cp.set(cc); chosen(cc); };
     ['lat', 'lon', 'alt'].forEach(k => q(k).oninput = () => { const la = parseFloat(q('lat').value), lo = parseFloat(q('lon').value); if (!isNaN(la) && !isNaN(lo) && Math.abs(la) <= 90 && Math.abs(lo) <= 180) { st.lat = la; st.lon = lo; st.alt = parseFloat(q('alt').value) || 0; st.placed = true; st.place = ''; showPicked(); } });
     let found = [], act = -1;
     const res = q('res'), inp = q('q');
@@ -96,14 +148,22 @@
       if (x.cc && countryInfo(x.cc).region !== 'intl') setCountry(x.cc);
       q('lat').value = st.lat; q('lon').value = st.lon; q('alt').value = st.alt; close(); inp.value = ''; showPicked();
     };
-    const search = async () => {
-      const t = inp.value.trim(); if (t.length < 2) return;
+    // suggest: the lookup made while typing (lighter, and quiet when it finds nothing); otherwise the full search from
+    // Enter or the Search button. Only the newest answer is shown, so a slow reply never replaces a newer one.
+    let seq = 0;
+    const search = async suggest => {
+      const t = inp.value.trim(); if (t.length < (suggest ? 3 : 2)) return;
+      const my = ++seq;
       res.hidden = false; res.setAttribute('aria-busy', 'true');
-      res.innerHTML = '<div class="locp-msg">Searching</div>';
-      let r; try { r = await RS.api('geocode?q=' + encodeURIComponent(t) + '&region=' + encodeURIComponent(st.country || '')); } catch (e) { r = { results: [], error: 'The computer running Skywave could not reach the place search. Check it is online, or enter coordinates by hand below.' }; }
-      res.removeAttribute('aria-busy');
+      if (!suggest || !found.length) res.innerHTML = '<div class="locp-msg">Searching</div>';
+      let r; try { r = await RS.api('geocode?q=' + encodeURIComponent(t) + '&region=' + encodeURIComponent(st.country || '') + (suggest ? '&suggest=1' : '')); } catch (e) { r = { results: [], error: 'The computer running Skywave could not reach the place search. Check it is online, or enter coordinates by hand below.' }; }
+      if (my !== seq || inp.value.trim() !== t) return;
+      res.removeAttribute('aria-busy'); act = -1; inp.removeAttribute('aria-activedescendant');
       found = (r && r.results) || [];
-      if (!found.length) { res.innerHTML = '<div class="locp-msg">' + esc((r && r.error) || 'Nothing matched "' + t + '". Try just the town, or add the state or country.') + '</div>'; return; }
+      if (!found.length) {
+        if (suggest && !(r && r.error)) { res.innerHTML = '<div class="locp-msg">No suggestions yet. Keep typing, or press Enter to search everywhere.</div>'; return; }
+        res.innerHTML = '<div class="locp-msg">' + esc((r && r.error) || 'Nothing matched "' + t + '". Try just the town, or add the state or country.') + '</div>'; return;
+      }
       res.innerHTML = found.map((x, i) => {
         const where = [x.area && x.area !== x.name ? x.area : '', x.admin, x.postcode, x.country].filter(Boolean).join(', ');
         return '<button type="button" class="locp-row" role="option" aria-selected="false" id="' + id + '-opt' + i + '" data-i="' + i + '"><span class="locp-t"><b>' + esc(x.name) + '</b><small>' + esc(where) + '</small></span>' + (x.cc ? '<span class="locp-cc">' + esc(x.cc) + '</span>' : '') + '</button>';
@@ -116,13 +176,14 @@
       else if (e.key === 'ArrowUp' && !res.hidden) { e.preventDefault(); mark(act - 1); }
       else if (e.key === 'Escape' && !res.hidden) { e.preventDefault(); e.stopPropagation(); close(); }
     });
-    q('find').onclick = search;
-    inp.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); if (act >= 0 && !res.hidden) pick(act); else search(); } };
-    q('gps').onclick = () => {
-      if (!navigator.geolocation) { RS.toast('This browser cannot share its location. Search for your town instead.', 'bad'); return; }
-      navigator.geolocation.getCurrentPosition(p => { Object.assign(st, { lat: +p.coords.latitude.toFixed(4), lon: +p.coords.longitude.toFixed(4), alt: Math.round(p.coords.altitude || 0), placed: true, place: 'Your location' }); q('lat').value = st.lat; q('lon').value = st.lon; q('alt').value = st.alt; showPicked(); },
-        () => RS.toast('Your browser would not share its location (it needs a secure page). Search for your town instead.', 'bad'), { timeout: 8000 });
-    };
+    q('find').onclick = () => { clearTimeout(inp._sg); search(false); };
+    inp.onkeydown = e => { if (RS.isEnter(e)) { e.preventDefault(); clearTimeout(inp._sg); if (act >= 0 && !res.hidden) pick(act); else search(false); } };
+    // suggestions as you type, once you pause for a moment
+    inp.addEventListener('input', () => {
+      clearTimeout(inp._sg);
+      if (inp.value.trim().length < 3) { seq++; found = []; close(); return; }
+      inp._sg = setTimeout(() => search(true), 350);
+    });
     return () => ({ lang: q('lang').value, country: st.country, region: st.country ? countryInfo(st.country).region : 'intl', lat: st.placed ? st.lat : 0, lon: st.placed ? st.lon : 0, alt: st.alt || 0, units: st.units, tz: st.tz, placed: st.placed, cc: st.cc || '' });
   }
 

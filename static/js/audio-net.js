@@ -23,6 +23,7 @@ function open() {
     if (typeof b === 'string' || !b.byteLength) return;
     const t = new Uint8Array(b, 0, 1)[0];
     if (t === 2 || t === 3 || t === 4) { frames++; bytes += b.byteLength; (port || self).postMessage({ t: 'pcm', b, s: t === 3 }, [b]); }   // no port: the page plays it (plain http)
+    else if (t === 5) (port || self).postMessage({ t: 'new' });      // a new frequency's sound starts here
   };
   s.onclose = () => {
     clearTimeout(limit);

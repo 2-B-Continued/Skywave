@@ -48,18 +48,34 @@ const fails = []; const chk = (n, ok, info) => { console.log((ok ? 'ok   ' : 'FA
   const uk = await p.evaluate(() => [...document.querySelectorAll('#rd-bands button')].map(x => x.textContent));
   chk('UK (part of Europe): PMR446', uk.includes('PMR446'), uk);
 
-  // the setup form lists every country, grouped by the settings they share, in the interface language
-  const form = await p.evaluate(async () => { RS.setupWizard(); await new Promise(r => setTimeout(r, 400)); const s = document.querySelector('#sw-region');
-    return { groups: [...s.querySelectorAll('optgroup')].map(g => g.label), n: s.querySelectorAll('optgroup option').length,
-      fj: (s.querySelector('option[value="FJ"]') || {}).parentNode && s.querySelector('option[value="FJ"]').parentNode.label, za: s.querySelector('option[value="ZA"]') && s.querySelector('option[value="ZA"]').textContent }; });
-  chk('setup lists all 250 countries and territories', form.n === 250, form.n);
-  chk('setup groups countries that share settings', ['Oceania', 'Europe', 'United States and Canada'].every(g => form.groups.includes(g)) && form.fj === 'Oceania', form);
-  chk('South Africa is listed by name', form.za === 'South Africa', form.za);
+  // the setup form lists every country A to Z, in the interface language, and you can type to find one
+  const opts = () => [...document.querySelectorAll('#sw-cl [role="option"]')].map(o => ({ cc: (o.querySelector('.locp-cc') || {}).textContent || '', name: o.querySelector('b').textContent }));
+  await p.evaluate(async () => { RS.setupWizard(); await new Promise(r => setTimeout(r, 400)); });
+  await p.click('#sw-cq'); await p.waitForTimeout(150);
+  const all = await p.evaluate(`(${opts})()`);
+  const names = all.filter(o => o.cc).map(o => o.name);
+  chk('setup lists all 250 countries and territories', names.length === 250, names.length);
+  chk('in alphabetical order', names.every((n, i) => !i || new Intl.Collator('en').compare(names[i - 1], n) <= 0), names.slice(0, 5));
+  chk('"Not sure" comes first', all[0].cc === '' && all[0].name === 'Not sure', all[0]);
+  chk('South Africa is listed by name', names.includes('South Africa'));
+  await p.fill('#sw-cq', 'zeal'); await p.waitForTimeout(150);
+  const nzl = await p.evaluate(`(${opts})()`);
+  chk('typing narrows the list ("zeal")', nzl.length === 1 && nzl[0].cc === 'NZ', nzl);
+  await p.fill('#sw-cq', 'cote'); await p.waitForTimeout(150);
+  chk('accents don\'t matter ("cote")', (await p.evaluate(`(${opts})()`)).some(o => o.cc === 'CI'));
+  await p.fill('#sw-cq', 'ke'); await p.waitForTimeout(150);
+  const ke = await p.evaluate(`(${opts})()`);
+  chk('a two-letter code finds its country first ("ke")', ke[0] && ke[0].cc === 'KE', ke.slice(0, 3));
+  await p.keyboard.press('Enter'); await p.waitForTimeout(150);
+  const picked = await p.evaluate(() => ({ v: document.querySelector('#sw-region').value, shown: document.querySelector('#sw-cq').value, open: !document.querySelector('#sw-cl').hidden }));
+  chk('Enter picks it, and the box shows its name', picked.v === 'KE' && picked.shown === 'Kenya' && !picked.open, picked);
+  await p.click('#sw-cq'); await p.keyboard.press('ArrowDown'); await p.keyboard.press('Enter'); await p.waitForTimeout(150);
+  chk('arrow keys move through the list', await p.evaluate(() => document.querySelector('#sw-region').value) === 'KI', await p.evaluate(() => document.querySelector('#sw-region').value));
   const de = await p.evaluate(async () => { const s = document.querySelector('#sw-lang'); s.value = 'de'; s.dispatchEvent(new Event('change')); await new Promise(r => setTimeout(r, 900));
-    const r = document.querySelector('#sw-region'); return { groups: [...r.querySelectorAll('optgroup')].map(g => g.label), de: r.querySelector('option[value="DE"]').textContent, ns: r.querySelector('option[value=""]').textContent }; });
-  chk('country names and groups follow the language', de.de === 'Deutschland' && de.groups.includes('Europa') && de.ns === 'Nicht sicher', de);
-  const pick = await p.evaluate(async () => { const r = document.querySelector('#sw-region'); r.value = 'KE'; r.dispatchEvent(new Event('change')); return document.querySelector('#sw-region').value; });
-  chk('a country can be picked', pick === 'KE', pick);
+    document.querySelector('#sw-cq').value = ''; return 1; });
+  await p.click('#sw-cq'); await p.fill('#sw-cq', 'deutsch'); await p.waitForTimeout(150);
+  const deo = await p.evaluate(`(${opts})()`);
+  chk('country names follow the language', deo.some(o => o.cc === 'DE' && o.name === 'Deutschland'), deo.slice(0, 3));
   chk('no page errors', !errs.length, errs);
   await b.close(); srv.kill();
   console.log(fails.length ? 'FAILED: ' + fails.join(', ') : 'ALL PASS'); process.exit(fails.length ? 1 : 0);

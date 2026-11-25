@@ -21,6 +21,12 @@ METEOR-M2 4
 1 59051U 24039A   26306.50000000  .00000100  00000-0  60000-4 0  9990
 2 59051  98.6000 100.0000 0005000  90.0000 270.0000 14.22000000 10000
 """
+def _fresh(line):
+    """Moves a TLE line's epoch to today and recomputes its checksum."""
+    t = time.gmtime()
+    line = line[:18] + "%02d%012.8f" % (t.tm_year % 100, t.tm_yday + 0.5) + line[32:68]
+    return line + str(sum(int(c) if c.isdigit() else c == "-" for c in line) % 10)
+tle = "\n".join(_fresh(l) if l.startswith("1 ") else l for l in tle.splitlines()) + "\n"
 check("tle added", sp.add_tle_text(tle) == 2)
 n = sp.set_auto("meteor-m2-4", 30)
 iq = [s for s in sp.schedule if s["sat"] == "meteor-m2-4"]

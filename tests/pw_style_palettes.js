@@ -6,7 +6,7 @@ const { chromium } = require('playwright'); const { spawn } = require('child_pro
   await new Promise(r => setTimeout(r, 4000));
   let ok = true; const chk = (n, c, x) => { console.log(c ? 'ok  ' : 'FAIL', n, x === undefined ? '' : JSON.stringify(x)); if (!c) ok = false; };
   const b = await chromium.launch(); const errs = [];
-  const SET = [['lumen', 'violet'], ['bento', 'porcelain'], ['folio', 'swiss'], ['aurora', 'obsidian']];
+  const SET = [['depth', 'midnight'], ['relief', 'clay'], ['walnut', 'autumn'], ['riot', 'carnival'], ['bento', 'porcelain'], ['folio', 'swiss']];
   for (const [name, vp] of [['d', { width: 1280, height: 860 }], ['m', { width: 390, height: 800 }]]) {
     const ctx = await b.newContext({ viewport: vp, deviceScaleFactor: 1 }); const p = await ctx.newPage(); p.on('pageerror', e => errs.push(e.message));
     await p.goto('http://127.0.0.1:18125/#radio'); await p.waitForTimeout(2500);

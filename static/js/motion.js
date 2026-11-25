@@ -1,7 +1,7 @@
 /* motion.js - the motion layer: smooth inertial wheel scrolling (Lenis), staggered entrances when a page opens and as cards
    scroll into view (GSAP + ScrollTrigger), animated page titles (SplitText), magnetic controls, a cursor glow and a modal
    entrance. The libraries are vendored in static/vendor (no build step, no CDN). Each style gets its own motion character so it
-   keeps its own shape language: Skywave and Aurora drift in from blur, Bento springs, Folio wipes like print, Terminal decrypts and steps.
+   keeps its own shape language: Skywave and Depth drift in from blur, Relief swells, Bento springs, Folio wipes like print, Terminal decrypts and steps.
    Three levels, chosen in Settings and stored per device: full (desktop default), light (phone default: short entrances only,
    no smooth scrolling and nothing that runs every frame) and off. The device's "reduce motion" setting always wins and means off.
    If the libraries fail to load, everything simply stays still. */
@@ -25,15 +25,15 @@
   // ---------------------------------------------------------------- per-style character
   // card: [from, to] for a card entering; title: how the page title arrives. Durations in seconds (GSAP).
   const PROFILE = {
-    aurora: { title: 'blur-chars', dur: 1, ease: 'expo.out', stagger: 0.07, card: [{ opacity: 0, y: 34, filter: 'blur(10px)' }, { opacity: 1, y: 0, filter: 'blur(0px)' }] },
-    classic: { title: 'rise-words', dur: 0.65, ease: 'power3.out', stagger: 0.045, card: [{ opacity: 0, y: 16 }, { opacity: 1, y: 0 }] },
-    lumen: { title: 'shine-chars', dur: 0.8, ease: 'expo.out', stagger: 0.04, card: [{ opacity: 0, scale: 0.975, filter: 'blur(6px)' }, { opacity: 1, scale: 1, filter: 'blur(0px)' }] },
+    relief: { title: 'rise-words', dur: 0.8, ease: 'power3.out', stagger: 0.05, card: [{ opacity: 0, scale: 0.96 }, { opacity: 1, scale: 1 }] },
+    walnut: { title: 'shine-chars', dur: 0.7, ease: 'power2.out', stagger: 0.04, card: [{ opacity: 0, y: 10, filter: 'brightness(0.55)' }, { opacity: 1, y: 0, filter: 'brightness(1)' }] },
+    riot: { title: 'slam-words', dur: 0.6, ease: 'expo.out', stagger: 0.06, card: [{ opacity: 0, y: 34, rotation: 2.5 }, { opacity: 1, y: 0, rotation: 0 }] },
+    depth: { title: 'blur-chars', dur: 0.95, ease: 'expo.out', stagger: 0.05, card: [{ opacity: 0, scale: 0.93, y: 18, filter: 'blur(10px)' }, { opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }] },
     bento: { title: 'pop-words', dur: 0.76, ease: 'expo.out', stagger: 0.055, card: [{ opacity: 0, y: 44, scale: 0.9 }, { opacity: 1, y: 0, scale: 1 }] },
     folio: { title: 'mask-words', dur: 0.95, ease: 'power4.inOut', stagger: 0.085, card: [{ clipPath: 'inset(0% 100% 0% 0%)', opacity: 0.2 }, { clipPath: 'inset(0% 0% 0% 0%)', opacity: 1 }] },
     brut: { title: 'slam-words', dur: 0.55, ease: 'power4.out', stagger: 0.05, card: [{ clipPath: 'inset(0% 100% 0% 0%)' }, { clipPath: 'inset(0% 0% 0% 0%)' }] },
     ticket: { title: 'pop-words', dur: 0.8, ease: 'expo.out', stagger: 0.06, card: [{ opacity: 0, y: 36, rotation: -2.5 }, { opacity: 1, y: 0, rotation: 0 }] },
     skywave: { title: 'blur-chars', dur: 0.9, ease: 'expo.out', stagger: 0.05, card: [{ opacity: 0, y: 26, scale: 0.97, filter: 'blur(8px)' }, { opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }] },
-    console: { title: 'scramble', dur: 0.45, ease: 'steps(5)', stagger: 0.06, card: [{ opacity: 0 }, { opacity: 1 }] },
     terminal: { title: 'scramble', dur: 0.42, ease: 'steps(7)', stagger: 0.05, card: [{ clipPath: 'inset(0% 0% 100% 0%)' }, { clipPath: 'inset(0% 0% 0% 0%)' }] },
   };
   const prof = () => PROFILE[style()] || PROFILE.skywave;
@@ -63,7 +63,7 @@
     };
     step();
   }
-  function shine(el) {        // one soft light sweep across the title (Lumen)
+  function shine(el) {        // one soft light sweep across the title (Walnut: light catching brushed metal)
     el.classList.add('sx-shine');
     G.fromTo(el, { backgroundPosition: '120% 0%' }, { backgroundPosition: '-20% 0%', duration: 1, ease: 'power2.inOut', clearProps: 'backgroundPosition', onComplete: () => el.classList.remove('sx-shine') });
   }
@@ -135,7 +135,7 @@
     if (!on()) return;
     const lt = !full(), s = style();
     const sb = document.getElementById('soundbar'), tabs = document.getElementById('tabs'), mn = document.getElementById('mnav'), brand = document.querySelector('.brand');
-    const off = s === 'aurora' ? { sb: -30, tabs: 40 } : s === 'bento' ? { sb: 60, tabs: -30 } : { sb: 24, tabs: 0 };
+    const off = s === 'depth' ? { sb: 40, tabs: 0 } : s === 'bento' ? { sb: 60, tabs: -30 } : { sb: 24, tabs: 0 };
     const ease = s === 'terminal' ? 'steps(5)' : 'expo.out';
     const go = (el, y, d) => el && el.offsetParent !== null && G.from(el, { opacity: 0, y, duration: lt ? 0.5 : 1.1, delay: d, ease, clearProps: 'transform,opacity' });
     go(sb, off.sb, 0.12); go(tabs, off.tabs, 0.22); go(mn, 30, 0.2); go(brand, -12, 0.06);
@@ -167,7 +167,7 @@
   M.scrollTo = y => { if (lenis) lenis.scrollTo(y, { offset: typeof y === 'number' ? 0 : -90 }); else window.scrollTo(0, typeof y === 'number' ? y : y.getBoundingClientRect().top + scrollY - 90); };
 
   // ---------------------------------------------------------------- magnetic controls and cursor glow (fine pointers, full motion)
-  const MAG = { aurora: ['.btn, .tab, .chip', 0.32, 10], lumen: ['.btn.primary, .soundbar .btn, .th-card', 0.22, 6], classic: ['.btn.primary, .btn.big, .tile', 0.16, 5], skywave: ['.btn.primary, .btn.big, .soundbar .btn', 0.18, 5] };
+  const MAG = { depth: ['.btn, .tab, .chip', 0.22, 7], relief: ['.btn.primary, .btn.big', 0.14, 4], skywave: ['.btn.primary, .btn.big, .soundbar .btn', 0.18, 5] };
   const magnet = (() => {
     let cur = null;
     const reset = () => { if (cur) G.to(cur, { x: 0, y: 0, duration: 0.6, ease: 'expo.out', overwrite: 'auto', clearProps: 'transform' }); cur = null; };
@@ -187,10 +187,10 @@
       },
     };
   })();
-  // Lumen and Skywave: a large soft light that trails the cursor across the page background
+  // Depth: a large soft light that trails the cursor across the room behind the windows
   const glow = (() => {
     let el = null, qx = null, qy = null, shown = false;
-    const want = () => full() && mqFine.matches && (style() === 'lumen' || style() === 'aurora');
+    const want = () => full() && mqFine.matches && style() === 'depth';
     return {
       move(e) {
         if (!want()) { this.hide(); return; }
@@ -248,7 +248,7 @@
     let from = { opacity: 0, y: 18, scale: 0.98 }, to = { opacity: 1, y: 0, scale: 1 };
     if (s === 'bento') { from = { opacity: 0, y: 60, scale: 0.92 }; }
     else if (s === 'folio' || s === 'terminal') { from = { clipPath: 'inset(0% 0% 100% 0%)' }; to = { clipPath: 'inset(0% 0% 0% 0%)' }; }
-    else if ((s === 'aurora' || s === 'skywave') && !lt) { from = { opacity: 0, y: 26, filter: 'blur(12px)' }; to = { opacity: 1, y: 0, filter: 'blur(0px)' }; }
+    else if ((s === 'depth' || s === 'skywave') && !lt) { from = { opacity: 0, y: 26, filter: 'blur(12px)' }; to = { opacity: 1, y: 0, filter: 'blur(0px)' }; }
     G.fromTo(m, from, Object.assign(to, { duration: lt ? 0.32 : s === 'terminal' ? 0.3 : 0.62, ease: s === 'terminal' ? 'steps(6)' : 'expo.out', clearProps: CLEAR }));
     if (back && back.classList.contains('modal-back')) G.from(back, { opacity: 0, duration: lt ? 0.2 : 0.36, ease: 'power1.out', clearProps: 'opacity' });
   }

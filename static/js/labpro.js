@@ -6,7 +6,7 @@
   const RS = window.RS, $ = RS.$, esc = RS.esc, Lab = RS.pages.lab;
   if (!Lab || !Lab.panes) return;
   const { row, tog, rng, sel, num, card, val } = Lab.ui;
-  const P = Lab.panes, T = Lab.TABS;
+  const P = Lab.panes;
   const kv = (k, v, id) => '<div class="lb-kv"' + (id ? ' id="' + id + '"' : '') + '><span>' + esc(k) + '</span><b>' + v + '</b></div>';
   const hz = f => (f / 1e6).toFixed(6) + ' MHz';
   const fmt = (v, d) => v == null || !isFinite(v) ? '-' : (+v).toFixed(d == null ? 1 : d);
@@ -17,14 +17,6 @@
   const stamp = () => new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
   const CTCSS = [67.0, 69.3, 71.9, 74.4, 77.0, 79.7, 82.5, 85.4, 88.5, 91.5, 94.8, 97.4, 100.0, 103.5, 107.2, 110.9, 114.8, 118.8, 123.0, 127.3, 131.8, 136.5, 141.3, 146.2, 151.4, 156.7, 159.8, 162.2, 165.5, 167.9, 171.3, 173.8, 177.3, 179.9, 183.5, 186.2, 189.9, 192.8, 196.6, 199.5, 203.5, 206.5, 210.7, 218.1, 225.7, 229.1, 233.6, 241.8, 250.3, 254.1];
   const DCS = '023 025 026 031 032 036 043 047 051 053 054 065 071 072 073 074 114 115 116 122 125 131 132 134 143 145 152 155 156 162 165 172 174 205 212 223 225 226 243 244 245 246 251 252 255 261 263 265 266 271 274 306 311 315 325 331 332 343 346 351 356 364 365 371 411 412 413 423 431 432 445 446 452 454 455 462 464 465 466 503 506 516 523 526 532 546 565 606 612 624 627 631 632 654 662 664 703 712 723 731 732 734 743 754'.split(' ');
-
-  // ---------------------------------------------------------------- tabs
-  const after = (k, add) => { const i = T.findIndex(t => t[0] === k); T.splice(i + 1, 0, ...add); };
-  after('demod', [['squelch', 'Squelch & tones'], ['audio', 'Audio']]);
-  after('display', [['zoom', 'Zoom & scope']]);
-  after('measure', [['integ', 'Integrator'], ['logger', 'Logger']]);
-  after('memory', [['net', 'Network']]);
-  T.push(['raw', 'Raw']);
 
   // ---------------------------------------------------------------- more on the existing tabs
   const front0 = P.front, demod0 = P.demod, display0 = P.display, measure0 = P.measure, system0 = P.system;
@@ -147,11 +139,12 @@
     const c = Math.round((vfo - lo) / binHz), half = Math.max(2, Math.round(bw / binHz));
     let pk = c, pv = -999; for (let i = Math.max(0, c - half); i < Math.min(1024, c + half); i++) { const v = dbAt(L, i); if (v > pv) { pv = v; pk = i; } }
     const width = dB => { let a = pk, b = pk; while (a > 0 && dbAt(L, a - 1) > pv - dB) a--; while (b < 1023 && dbAt(L, b + 1) > pv - dB) b++; return (b - a + 1) * binHz; };
-    const pw = (a, b) => { let s = 0; for (let i = Math.max(0, a); i < Math.min(1024, b); i++) s += Math.pow(10, dbAt(L, i) / 10); return 10 * Math.log10(s + 1e-20); };
+    // power over bins a..b; null when most of that span lies outside the band on screen (an edge channel has no neighbour)
+    const pw = (a, b) => { const i0 = Math.max(0, a), i1 = Math.min(1024, b); if (i1 - i0 < (b - a) / 2) return null; let s = 0; for (let i = i0; i < i1; i++) s += Math.pow(10, dbAt(L, i) / 10); return 10 * Math.log10(s + 1e-20); };
     const ch = Math.max(1, Math.round(bw / 2 / binHz)), main = pw(c - ch, c + ch), lowA = pw(c - 3 * ch, c - ch), upA = pw(c + ch, c + 3 * ch);
     const k = w => w >= 1000 ? (w / 1000).toFixed(1) + ' kHz' : Math.round(w) + ' Hz';
     el.innerHTML = kv('Peak level', fmt(pv + ref()) + ' ' + unit()) + kv('Channel power', fmt(main + ref()) + ' ' + unit()) + kv('Width at -3 dB', k(width(3))) + kv('Width at -6 dB', k(width(6))) + kv('Width at -20 dB', k(width(20))) + kv('Width at -26 dB', k(width(26))) +
-      kv('Adjacent channel below', fmt(lowA - main) + ' dBc') + kv('Adjacent channel above', fmt(upA - main) + ' dBc') + kv('Noise floor', fmt(L.floor + ref()) + ' ' + unit()) + kv('Display resolution', k(binHz));
+      kv('Adjacent channel below', lowA == null ? '-' : fmt(lowA - main) + ' dBc') + kv('Adjacent channel above', upA == null ? '-' : fmt(upA - main) + ' dBc') + kv('Noise floor', fmt(L.floor + ref()) + ' ' + unit()) + kv('Display resolution', k(binHz));
   }
   // Peaks are held for 5 s after they were last seen, so a signal that pings less often than the spectrum refreshes
   // stays in the list instead of flashing in and out. Rows are ordered by a slowly falling peak level, so they don't
@@ -189,14 +182,13 @@
   let zoom = null, snap = null, persist = null;
   function wantLive() {
     if (RS.page !== 'lab') return;
-    const z = Lab.tab === 'zoom';
-    RS.send({ cmd: 'lab_live', zoom: z, scope: z });
+    RS.send({ cmd: 'lab_live', zoom: Lab.shown('lp-zcv') || Lab.shown('lp-count'), scope: Lab.shown('lp-scv') });
   }
   setInterval(wantLive, 4000);
   RS.on('labpane', p => { wantLive(); persist = null; if (p === 'net') rigFill(); if (p === 'raw') rawFill(); if (p === 'system') { perf(); logs(); } if (p === 'front') cvFill(); if (p === 'zoom') { RS.$$('#lp-smode button').forEach(b => b.onclick = () => { Lab.smode = b.dataset.m; RS.store.set('lp_smode', Lab.smode); persist = null; RS.$$('#lp-smode button').forEach(x => x.setAttribute('aria-pressed', x === b)); drawScope(); }); } });
   RS.on('page', p => { if (p !== 'lab') RS.send({ cmd: 'lab_live', zoom: false, scope: false }); });
-  RS.on('zoom', m => { zoom = m; if (RS.page === 'lab' && Lab.tab === 'zoom') { drawZoom(); counter(); } });
-  RS.on('iqsnap', m => { snap = m; if (RS.page === 'lab' && Lab.tab === 'zoom') drawScope(); });
+  RS.on('zoom', m => { zoom = m; if (RS.page === 'lab') { drawZoom(); counter(); } });
+  RS.on('iqsnap', m => { snap = m; if (Lab.shown('lp-scv')) drawScope(); });
   function grid(g, w, h) { g.strokeStyle = '#ffffff14'; g.lineWidth = 1; for (let i = 1; i < 8; i++) { g.beginPath(); g.moveTo(w * i / 8, 0); g.lineTo(w * i / 8, h); g.stroke(); } for (let i = 1; i < 5; i++) { g.beginPath(); g.moveTo(0, h * i / 5); g.lineTo(w, h * i / 5); g.stroke(); } }
   function drawZoom() {
     const cv = $('#lp-zcv'); if (!cv || !zoom) return; const c = RS.fit(cv); if (!c) return;
@@ -255,10 +247,17 @@
   }
   function audioLoop() {
     araf = 0;
-    if (RS.page !== 'lab' || Lab.tab !== 'audio') return;
+    if (!Lab.shown('lp-afft')) return;
     araf = requestAnimationFrame(audioLoop);
     const a = analyser(), st = $('#lp-astat');
-    if (!a) { if (st) st.textContent = 'Start the sound (bottom bar) to see the analyser.'; return; }
+    if (!a) {
+      if (st) st.textContent = '';
+      // an empty screen says why it is empty, once (the loop keeps running until the sound starts)
+      const cv = $('#lp-afft'), c = RS.fit(cv);
+      if (c && cv._empty !== c.w) { cv._empty = c.w; c.g.fillStyle = '#071318'; c.g.fillRect(0, 0, c.w, c.h); c.g.fillStyle = '#9fb6bf'; c.g.font = '14px ' + (getComputedStyle(cv).fontFamily || 'sans-serif'); c.g.textAlign = 'center'; c.g.fillText('Press Start in the toolbar to hear the radio and see its audio here.', c.w / 2, c.h / 2); }
+      return;
+    }
+    const cv0 = $('#lp-afft'); if (cv0) cv0._empty = 0;
     const cv = $('#lp-afft'), c = RS.fit(cv); if (!c) return;
     const { g, w, h } = c, n = a.frequencyBinCount, fs = a.context.sampleRate;
     if (!abuf || abuf.length !== n) abuf = new Float32Array(n);
@@ -288,7 +287,7 @@
     if (!In.sum) In.sum = new Float64Array(1024);
     for (let i = 0; i < 1024; i++) In.sum[i] += Math.pow(10, dbAt(L, i) / 10);
     In.n++; In.ms = Date.now() - In.t0;
-    if (RS.page === 'lab' && Lab.tab === 'integ' && In.n % 5 === 0) drawInteg();
+    if (In.n % 5 === 0 && Lab.shown('lp-incv')) drawInteg();
   });
   const inAvg = () => In.sum ? Array.from(In.sum, v => 10 * Math.log10(v / In.n + 1e-20)) : null;
   const smooth = (a, k) => { if (k <= 1) return a; const h = k >> 1; return a.map((_, i) => { let s = 0, c = 0; for (let j = i - h; j <= i + h; j++) if (j >= 0 && j < a.length) { s += a[j]; c++; } return s / c; }); };
@@ -326,7 +325,7 @@
     const iv = +(($('#lp-lg-iv') || {}).value || Lg.iv || 1) * 1000, now = Date.now(); if (now - Lg.t < iv) return; Lg.t = now; Lg.iv = iv / 1000;
     const st = RS.st || {};
     Lg.pts.push([now, RS.vfo(), st.snr, (st.floor || 0) + (st.snr || 0), st.floor, st.clip || 0, st.quiet]); if (Lg.pts.length > 50000) Lg.pts.splice(0, 10000);
-    if (RS.page === 'lab' && Lab.tab === 'logger') drawLog();
+    if (Lab.shown('lp-lgcv')) drawLog();
   }, 250);
   function drawLog() {
     const go = $('#lp-lg-go'); if (go) go.textContent = Lg.on ? 'Pause' : 'Start logging';
@@ -371,7 +370,7 @@
       kv('Skips to catch up with the radio', p.caught_up || 0) + kv('Sound trimmed on the way to slow devices', p.sound_trims || 0) +
       kv('Gaps in this page\'s player', s.under || 0) + kv('Player cushion', s.target ? Math.round(s.target * 1000) + ' ms' : '-') + kv('Player engine', A.engine === 'page' ? 'Page (plain http)' : A.engine === 'worklet' ? 'Audio thread' : '-');
   }
-  setInterval(() => { if (RS.page === 'lab' && Lab.tab === 'system') perf(); }, 2000);
+  setInterval(() => { if (Lab.shown('lp-perf')) perf(); }, 2000);
   let logLines = [];
   async function logs() {
     const r = await fetch('/api/log').then(x => x.json()).catch(() => null); logLines = (r && r.lines) || [];

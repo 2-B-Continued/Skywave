@@ -33,7 +33,7 @@
     $('#ms-kind').onclick = e => { const b = e.target.closest('button'); if (!b) return; Ms.switch(b.dataset.k); };
     $('#ms-q').oninput = e => { Ms.q = e.target.value.trim().toLowerCase(); Ms.render(); };
     $('#ms-noise').onchange = e => { Ms.hideNoise = e.target.checked; Ms.render(); };
-    $('#ms-word').onkeydown = e => { if (e.key === 'Enter') RS.act['ms-add'](); };
+    $('#ms-word').onkeydown = e => { if (RS.isEnter(e)) RS.act['ms-add'](); };
     RS.on('dl_msg', m => { Ms.list.unshift(m); if (Ms.list.length > 400) Ms.list.pop(); if (m.hit && m.hit.length) Ms.alert(m); if (RS.page === 'messages') Ms.render(true); });
     RS.on('dl_history', m => { Ms.list = (m.list || []).slice().reverse(); if (m.tap && m.tap.name === Ms.kind) Ms.tap = m.tap; if (RS.page === 'messages') Ms.render(); });
     RS.on('tap_state', m => { RS.st.tap = m.name; if (m.name === 'acars' || m.name === 'pager') Ms.tap = m; if (RS.page === 'messages') Ms.update(); });

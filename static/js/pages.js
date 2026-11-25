@@ -3,6 +3,11 @@
   'use strict';
   const RS = window.RS, $ = RS.$, esc = RS.esc, icon = RS.icon;
 
+  // OpenStreetMap's tile servers refuse a tile request that carries no Referer (an error tile saying "403r Access
+  // blocked. Referer is required"). Every Skywave page is served with "Referrer-Policy: no-referrer", so the tiles say
+  // which site asks for them themselves: only the address of this Skywave (scheme, host and port, never the page's
+  // path), which is what OpenStreetMap's tile usage policy asks for.
+  const TILE_REFERRER = 'strict-origin-when-cross-origin';
   // ================================================================ shared map (OpenStreetMap tiles optional)
   RS.Map = function (el, opt) {
     const m = this; opt = opt || {};
@@ -61,7 +66,7 @@
         Object.keys(m.pool).forEach(k => { if (!want[k]) { m.pool[k].remove(); delete m.pool[k]; } });
         Object.keys(want).forEach(k => {
           const t = want[k]; let img = m.pool[k];
-          if (!img) { img = document.createElement('img'); img.alt = ''; img.draggable = false; img.referrerPolicy = 'no-referrer'; img.onerror = () => { m.failed++; img.remove(); m.dirty = true; }; img.onload = () => { m.failed = 0; }; img.src = 'https://tile.openstreetmap.org/' + t[2] + '.png'; m.tl.appendChild(img); m.pool[k] = img; }
+          if (!img) { img = document.createElement('img'); img.alt = ''; img.draggable = false; img.referrerPolicy = TILE_REFERRER; img.onerror = () => { m.failed++; img.remove(); m.dirty = true; }; img.onload = () => { m.failed = 0; }; img.src = 'https://tile.openstreetmap.org/' + t[2] + '.png'; m.tl.appendChild(img); m.pool[k] = img; }
           img.style.left = Math.round(t[0] * 256 - cx + w / 2) + 'px'; img.style.top = Math.round(t[1] * 256 - cy + h / 2) + 'px';
         });
       } else if (m.tl.firstChild) { m.tl.innerHTML = ''; m.pool = {}; }

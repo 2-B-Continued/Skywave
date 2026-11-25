@@ -24,7 +24,6 @@
 .dial-zoom { position: absolute; top: 6px; right: 6px; z-index: 2; display: flex; gap: 4px; opacity: .9; }
 .dial-zoom .btn { --h: 30px; width: 34px !important; height: 30px !important; min-height: 0 !important; min-width: 0 !important; padding: 0 !important; justify-content: center; }
 .dial-zoom .btn svg { width: 15px; height: 15px; margin: 0; }
-:root[data-style="aurora"] .dial-zoom .btn { --sl: 7px; }
 
 /* ---------- the frequency editor keeps to its own line, and the band buttons above always win the tap */
 .band-chips { position: relative; z-index: 3; }
@@ -81,18 +80,41 @@ main, .page, .card, .glass, .banner, .modal { min-width: 0; max-width: 100%; }
    contents list instead of running off the page. */
 @media (min-width: 861px) { :root[data-style="folio"] .tabs { flex-wrap: wrap; row-gap: 0; } }
 
-/* Tabs that don't fit drop their words (see fitTabs in core.js); the open tab always keeps its name. */
-.tabs.fit1:not(.noicons) .tab.sec:not([aria-selected="true"]) .t, .tabs.fit2:not(.noicons) .tab:not([aria-selected="true"]) .t { display: none !important; }
-.tabs.fit1:not(.noicons) .tab.sec:not([aria-selected="true"]), .tabs.fit2:not(.noicons) .tab:not([aria-selected="true"]) { padding-left: 10px; padding-right: 10px; }
-.tabs.fit3 { gap: 2px !important; }
-.tabs.fit3 .tab:not([aria-selected="true"]) { padding-left: 6px !important; padding-right: 6px !important; min-width: 0 !important; }
-.tabs.fit3 .tab-sep { margin-left: 2px !important; margin-right: 2px !important; }
-.tabs.noicons .tab.sec .t, .tabs.noicons .tab .t { display: inline !important; }
-.tabs.noicons.fit1 .tab:not([aria-selected="true"]) { padding-left: 9px !important; padding-right: 9px !important; }
-.tabs.noicons.fit2 .tab { font-size: .88em !important; letter-spacing: .02em !important; }
-.tabs.noicons.fit3 .tab { font-size: .8em !important; padding-left: 6px !important; padding-right: 6px !important; }
-/* Word-only tabs never squash their words: if they still don't fit, they wrap onto a second row of blocks. */
-.tabs.noicons .tab { flex-shrink: 0; white-space: nowrap; }
-.tabs.noicons.fit3 { flex-wrap: wrap; overflow: visible !important; }
-@media (min-width: 761px) { :root[data-style="brut"] .topbar:has(.tabs.fit3) { height: auto; } }
-@media (min-width: 761px) { :root[data-style="brut"] .tabs.fit3 .tab { min-height: 40px; border-bottom: var(--bd); } }
+
+/* ---------------------------------------------------------------- the section tabs: icon and full name, always
+   Every tab shows its icon and its whole name in every style. Nothing is shortened or squeezed: when the tabs don't fit
+   on one line (fitTabs in core.js adds .wrap), the bar wraps onto further lines and the top bar grows to hold them. */
+:root[data-style] .tabs .tab { flex-shrink: 0; white-space: nowrap; }
+:root[data-style]:not([data-style="walnut"]) .tabs .tab .t { display: inline !important; }
+:root[data-style] .tabs .tab svg { display: inline-block !important; flex: none; }
+/* not enough room beside the logo: the tabs get a full-width line of their own under it, wrapping further if needed */
+@media (min-width: 761px) {
+  :root[data-style]:not([data-style="depth"]):not([data-style="walnut"]) .topbar:has(.tabs.wrap) { height: auto !important; min-height: 60px; flex-wrap: wrap; row-gap: 8px; padding-block: 10px; }
+  :root[data-style]:not([data-style="depth"]):not([data-style="walnut"]) .tabs.wrap { order: 9; flex: 1 1 100% !important; width: 100%; max-width: none;
+    margin: 0 !important; flex-wrap: wrap; justify-content: center; overflow: visible !important; row-gap: 6px; border-radius: 28px; }
+  :root[data-style="walnut"] .topbar > .tabs.wrap { flex-wrap: wrap; justify-content: center; overflow: visible !important; row-gap: 8px; height: auto !important; padding-inline: 12px; }
+  :root[data-style="walnut"] .soundbar { bottom: var(--tabs-h, 66px) !important; }
+  :root[data-style="walnut"] main { padding-bottom: calc(var(--tabs-h, 66px) + 134px) !important; }
+}
+/* Depth's floating column of sections: each pill carries its name beside its icon */
+@media (min-width: 761px) {
+  :root[data-style="depth"] .tabs { align-items: stretch; width: 212px; border-radius: 26px; padding: 10px; gap: 2px; flex-wrap: nowrap !important; overflow-y: auto !important;
+    top: 92px; translate: none; max-height: calc(100vh - 200px); }   /* ends above the player */
+  :root[data-style="depth"] .tab { width: auto !important; height: 40px !important; min-height: 40px !important; padding: 0 14px !important; gap: 10px;
+    justify-content: flex-start !important; border-radius: 22px !important; }
+  :root[data-style="depth"] .tab-sep { width: auto !important; margin: 4px 10px !important; }
+  :root[data-style="depth"] main { padding-left: 262px !important; }
+}
+/* Skywave's dark frosted capsule: the names of the tabs that aren't open read in its own light ink */
+@media (min-width: 761px) { :root[data-style="skywave"] .tabs .tab:not([aria-selected="true"]) { color: color-mix(in srgb, var(--inst-ink) 80%, transparent); } }
+/* In the grid top bar, wrapped tabs take a whole row of their own under the logo and controls */
+@media (min-width: 761px) {
+  :root[data-style]:not([data-style="depth"]):not([data-style="folio"]):not([data-style="walnut"]):not([data-style="riot"]) .topbar > .tabs.wrap { grid-column: 1 / -1; grid-row: 2; justify-self: stretch; }
+  :root[data-style]:not([data-style="depth"]):not([data-style="folio"]):not([data-style="walnut"]):not([data-style="riot"]) .topbar:has(> .tabs.wrap) { row-gap: 8px; }
+}
+/* the country list: type to search, or open the whole A to Z list with the arrow */
+:root[data-style] .cpick { position: relative; }
+:root[data-style] .cpick-in input { padding-right: 44px; }
+:root[data-style] .cpick-btn { position: absolute; right: 4px; top: 50%; translate: 0 -50%; width: 36px; height: 36px; display: grid; place-items: center; border: 0; background: none; color: var(--ink-2); cursor: pointer; border-radius: 8px; }
+:root[data-style] .cpick-btn svg { width: 16px; height: 16px; }
+:root[data-style] .cpick-list { margin-top: 6px; }

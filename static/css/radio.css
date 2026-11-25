@@ -145,6 +145,11 @@
 :root[data-style] .rdp-bars i.on { background: var(--ink-2); }
 :root[data-style] .rdp-song { display: flex; align-items: center; gap: 12px; min-height: 62px; padding: 8px 10px; border-bottom: 1px solid var(--stroke); }
 :root[data-style] .rdp-song img, :root[data-style] .rdp-song-ph { width: 44px; height: 44px; flex: none; border-radius: 8px; object-fit: cover; background: var(--sf-2); }
+/* a song with no cover: a note on a soft colour of its own, drawn in the palette's light and dark */
+:root[data-style] .rdp-song-ph { display: grid; place-items: center; color: color-mix(in oklab, hsl(var(--ph-h, 200) 60% 45%) 70%, var(--ink));
+  background: linear-gradient(135deg, color-mix(in oklab, hsl(var(--ph-h, 200) 70% 60%) 32%, var(--sf-2)), color-mix(in oklab, hsl(calc(var(--ph-h, 200) + 40) 70% 55%) 18%, var(--sf-2)));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 8%, transparent); }
+:root[data-style] .rdp-song-ph svg { width: 22px; height: 22px; opacity: .85; }
 :root[data-style] .rdp-foot { padding: 12px 0 2px; }
 :root[data-style] .rdp-kv { margin-top: 0; }
 :root[data-style] .rdp-af { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 12px; }

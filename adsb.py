@@ -133,6 +133,32 @@ def encode_velocity(icao, speed_kt, heading_deg, vrate_fpm):
     return _finish(17, 5, icao, v.to_bytes(7, "big"))
 
 
+def encode_target_state(icao, sel_alt_ft=None, fms=False, baro_hpa=None, sel_hdg=None, modes=()):
+    """ADS-B version 2 target state and status (type code 29, subtype 1): what the autopilot or flight management
+    system is set to. modes: any of "ap", "vnav", "alt", "app", "lnav", "tcas"."""
+    v = (29 << 51) | (1 << 49) | ((1 if fms else 0) << 47)
+    if sel_alt_ft is not None:
+        v |= (int(round(sel_alt_ft / 32)) + 1 & 0x7FF) << 36
+    if baro_hpa is not None:
+        v |= (int(round((baro_hpa - 800) / 0.8)) + 1 & 0x1FF) << 27
+    if sel_hdg is not None:
+        v |= (1 << 26) | ((int(round((sel_hdg % 360) * 256 / 180)) & 0x1FF) << 17)
+    if modes:
+        v |= 1 << 9
+        for name, bit in (("ap", 8), ("vnav", 7), ("alt", 6), ("app", 4), ("tcas", 3), ("lnav", 2)):
+            if name in modes:
+                v |= 1 << bit
+    return _finish(17, 5, icao, v.to_bytes(7, "big"))
+
+
+def encode_airspeed(icao, airspeed_kt, heading_deg, true_airspeed=False, vrate_fpm=0):
+    """Airborne velocity, subtype 3: the airspeed and the way the nose points (sent when no GNSS speed is available)."""
+    vr = int(abs(vrate_fpm) / 64) + 1
+    v = (19 << 51) | (3 << 48) | (1 << 42) | ((int(round((heading_deg % 360) * 1024 / 360)) & 0x3FF) << 32) | \
+        ((1 if true_airspeed else 0) << 31) | ((int(airspeed_kt) + 1 & 0x3FF) << 21) | ((1 if vrate_fpm < 0 else 0) << 19) | (vr << 10)
+    return _finish(17, 5, icao, v.to_bytes(7, "big"))
+
+
 def modulate(frames, gap=40, amp=1.0, fs=ADSB_FS):
     """Frames -> magnitude waveform at 2 MS/s (preamble + PPM data), with `gap` samples between."""
     out = []
@@ -346,8 +372,30 @@ class AircraftTable:
                             if d > self.cover[b]:
                                 self.cover[b] = round(d, 1)
                                 self.cover_dirty = True
+            elif tc == 29 and ((me >> 49) & 3) == 1:
+                # target state and status (ADS-B version 2): what the autopilot or flight management system is set to
+                sa = (me >> 36) & 0x7FF
+                a["sel_alt"] = (sa - 1) * 32 if sa else None
+                a["sel_src"] = "fms" if (me >> 47) & 1 else "mcp"
+                qnh = (me >> 27) & 0x1FF
+                a["baro"] = round(800 + (qnh - 1) * 0.8, 1) if qnh else None
+                a["sel_hdg"] = round(((me >> 17) & 0x1FF) * 180 / 256) % 360 if (me >> 26) & 1 else None
+                if (me >> 9) & 1:
+                    a["ap"] = [name for name, bit in (("ap", 8), ("vnav", 7), ("alt", 6), ("app", 4), ("lnav", 2)) if (me >> bit) & 1]
+                a["tcas"] = bool((me >> 3) & 1)
+                a["_ts"] = now
             elif tc == 19:
                 st = (me >> 48) & 7
+                if st in (3, 4):
+                    # airspeed and the way the nose points; ground speed and track come in subtypes 1 and 2
+                    if (me >> 42) & 1:
+                        a["hdg_mag"] = round(((me >> 32) & 0x3FF) * 360 / 1024) % 360
+                    asp = (me >> 21) & 0x3FF
+                    if asp:
+                        a["tas" if (me >> 31) & 1 else "ias"] = (asp - 1) * (4 if st == 4 else 1)
+                    vr = (me >> 10) & 0x1FF
+                    if vr:
+                        a["vrate"] = (vr - 1) * 64 * (-1 if (me >> 19) & 1 else 1)
                 if st in (1, 2):
                     sew, vew = (me >> 42) & 1, (me >> 32) & 0x3FF
                     sns, vns = (me >> 31) & 1, (me >> 21) & 0x3FF
@@ -377,6 +425,13 @@ class AircraftTable:
                 d["squawk"] = a.get("squawk", "")
                 d["emg"] = a.get("emg", 0)
                 d["mil"] = military(a["icao"], a.get("callsign"))
+                if a.get("_ts") and now - a["_ts"] < 60:          # autopilot settings, while they are being sent
+                    for k in ("sel_alt", "sel_src", "sel_hdg", "baro", "ap", "tcas"):
+                        if a.get(k) is not None:
+                            d[k] = a[k]
+                for k in ("ias", "tas", "hdg_mag"):
+                    if a.get(k) is not None:
+                        d[k] = a[k]
                 d["first"] = round(a.get("first", now))
                 d["age"] = round(now - a["seen"], 1)
                 if a["lat"] is not None:

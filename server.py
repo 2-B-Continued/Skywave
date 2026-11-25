@@ -8,8 +8,11 @@ import base64
 import collections
 import hashlib
 import hmac
+import ipaddress
 import gzip
 import json
+import airportmap as airportmap_mod
+import airports as airports_mod
 import planeinfo as planeinfo_mod
 import mimetypes
 import os
@@ -19,7 +22,6 @@ import re
 import shlex
 import shutil
 import socket
-import ssl
 import struct
 import subprocess
 import sys
@@ -46,8 +48,8 @@ import weather as weather_mod
 VERSION = "1.0.0"
 HERE = os.path.dirname(os.path.abspath(__file__))
 STATIC = os.path.join(HERE, "static")
-_STATIC_CACHE = {}
-PASS_LOCK = threading.Lock()        # (path, etag, gzipped) -> bytes, so files are read and compressed once
+_STATIC_CACHE = {}                  # (path, etag, gzipped) -> bytes, so files are read and compressed once
+PASS_LOCK = threading.Lock()        # one satellite pass search at a time
 WS_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 
 mimetypes.add_type("text/javascript", ".js")
@@ -87,11 +89,6 @@ def save_prefs(path, prefs):
     os.replace(tmp, path)
 
 
-def geocode(query, region=""):
-    """Find a place from a town, suburb, postcode or "area, state, country" (geo.py: Open-Meteo plus OpenStreetMap)."""
-    return geo.geocode(query, region)
-
-
 def available_languages(static_dir):
     d = os.path.join(static_dir, "lang")
     out = [{"code": "en", "name": "English"}]
@@ -115,8 +112,11 @@ class App:
         self.banks = banks_mod.BankStore(self.cfg.path_for("banks.json"), self.cfg["region"], self.cfg.get("country"))
         apply_tz(self.cfg["tz"])
         self.prefs = load_prefs(self.cfg.path_for("ui.json"))
+        art_mod.set_store(self.cfg.path_for("art"))
         global PLANEINFO
-        PLANEINFO = planeinfo_mod.PlaneInfo(self.cfg.path_for("planeinfo.json"))
+        self.airports = airports_mod.Airports(self.cfg.path_for("airports.json"), offline=bool(os.environ.get("NO_NET")))
+        self.airportmaps = airportmap_mod.AirportMaps(self.cfg["data_dir"], offline=bool(os.environ.get("NO_NET")))
+        PLANEINFO = planeinfo_mod.PlaneInfo(self.cfg.path_for("planeinfo.json"), self.airports, self.airportmaps)
         self.space = space_mod.Space(self.cfg)
         self.eng = engine_mod.Engine(self.cfg, self.banks, self.space)
         self.eng.log_hook = self.add_log
@@ -220,8 +220,8 @@ class App:
                 "sensors": [{k: v for k, v in s.items() if isinstance(v, (str, int, float, bool))}
                             for s in e.sensors.values()],
                 "peaks": e.sweep_result or [], "sim": bool(self.cfg["sim"]), "stream": bool(shutil.which("ffmpeg")),
-                "https_port": getattr(self, "https_port", 0),
-                "tools": {"rtlamr": bool(shutil.which(shlex.split(os.environ.get("RTLAMR_BIN", "rtlamr"))[0])) and bool(shutil.which(shlex.split(os.environ.get("RTL_TCP_BIN", "rtl_tcp"))[0]))},
+                "tools": {"rtlamr": bool(shutil.which(shlex.split(os.environ.get("RTLAMR_BIN", "rtlamr"))[0])) and
+                                    (bool(self.cfg["rtl_tcp"]) or bool(shutil.which(shlex.split(os.environ.get("RTL_TCP_BIN", "rtl_tcp"))[0])))},
                 "samples": config_mod.SAMPLE_RATES, "timers": e.timers.public(), "captions_log": list(e.cap.log)[-40:],
                 "captions": e.cap.status()}
 
@@ -339,18 +339,14 @@ def ws_read(f, limit=1 << 20):
         if first_op is None:
             first_op = op
         msg += data
+        if len(msg) > limit:                  # the limit covers the whole message, not just each piece of it
+            raise EOFError
         if fin:
             return first_op, msg
 
 
 # ======================================================================================= HTTP
 class Handler(BaseHTTPRequestHandler):
-    def setup(self):
-        if isinstance(self.request, ssl.SSLSocket):
-            self.request.settimeout(10)
-            self.request.do_handshake()
-        super().setup()
-
     protocol_version = "HTTP/1.1"
     server_version = "Skywave/" + VERSION
     timeout = 30                                  # a connection that goes quiet is dropped (slow-client protection)
@@ -360,8 +356,19 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("X-Frame-Options", "DENY")
         self.send_header("Referrer-Policy", "no-referrer")
-        self.send_header("Content-Security-Policy", "frame-ancestors 'none'; base-uri 'self'; object-src 'none'")
+        # Scripts only from this server's own files: text from the air or from outside services that slipped into the
+        # page unescaped still could not run (no inline scripts, no inline event handlers, no eval).
+        self.send_header("Content-Security-Policy", "script-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; "
+                                                    "frame-ancestors 'none'")
         super().end_headers()
+
+    def _host_ok(self):
+        """With sign-in off, answer only to names a home network uses. A web page elsewhere can point its own domain
+        name at this machine (DNS rebinding); the browser then treats Skywave as part of that page and the Origin check
+        alone cannot tell. With sign-in on the browser never sends the password to such a name, so no check is needed."""
+        if APP.cfg["auth_user"]:
+            return True
+        return host_allowed(self.headers.get("Host", ""))
 
     def _same_origin(self):
         """Browsers send Origin on WebSockets and cross-site POSTs. If it names another site, refuse: otherwise any web
@@ -453,6 +460,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send(200, b"ok", "text/plain")
             if not self._authorised():
                 return self._challenge()
+            if not self._host_ok():
+                return self._err(403, HOST_REFUSED)
             q = dict(urllib.parse.parse_qsl(u.query))
             if path in ("/ws", "/stream.mp3") and not self._same_origin():
                 return self._err(403, "Cross-site requests are not allowed.")
@@ -473,7 +482,8 @@ class Handler(BaseHTTPRequestHandler):
             pass
         except Exception as e:
             try:
-                self._err(500, "Something went wrong: %s" % e)
+                APP.add_log("error", "%s %s failed: %s" % (self.command, self.path.split("?")[0][:80], e))
+                self._err(500, "Something went wrong. 'Show technical details' in Settings has more.")
             except Exception:
                 pass
 
@@ -481,7 +491,7 @@ class Handler(BaseHTTPRequestHandler):
         try:
             if not self._authorised():
                 return self._challenge()
-            if not self._same_origin():
+            if not self._host_ok() or not self._same_origin():
                 return self._err(403, "Cross-site requests are not allowed.")
             u = urllib.parse.urlsplit(self.path)
             path = urllib.parse.unquote(u.path)
@@ -494,7 +504,8 @@ class Handler(BaseHTTPRequestHandler):
             self._err(400, str(e))
         except Exception as e:
             try:
-                self._err(500, "Something went wrong: %s" % e)
+                APP.add_log("error", "%s %s failed: %s" % (self.command, self.path.split("?")[0][:80], e))
+                self._err(500, "Something went wrong. 'Show technical details' in Settings has more.")
             except Exception:
                 pass
 
@@ -633,7 +644,7 @@ class Handler(BaseHTTPRequestHandler):
     def serve_decoded(self, rest):
         did, _, name = rest.partition("/")
         full = APP.weather.file_path(did, name)
-        if not full or name.endswith(".json"):
+        if not full or not name.lower().endswith((".png", ".jpg", ".jpeg", ".pdf")):
             return self._err(404, "not found")
         ctype = mimetypes.guess_type(full)[0] or "application/octet-stream"
         with open(full, "rb") as f:
@@ -719,9 +730,15 @@ class Handler(BaseHTTPRequestHandler):
             if route == "sensor_history":
                 return self._json({"key": q.get("key", ""), "hist": e.sstore.history(q.get("key", "")), "step": 300})
             if route == "art":
-                res = art_mod.lookup(q.get("q", ""), country=_country(a.cfg, q.get("cc", "")))
-                return self._json({"art": ("/api/artimg/" + res["id"]) if res else None, "artist": res["artist"] if res else "",
-                                   "title": res["title"] if res else "", "album": res["album"] if res else "", "track": res.get("track") if res else None})
+                # parse=1: only read the song out of the text, nothing is looked up (cover art turned off)
+                res = None if q.get("parse") == "1" else art_mod.lookup(q.get("q", ""), country=_country(a.cfg, q.get("cc", "")))
+                if res:
+                    return self._json({"art": "/api/artimg/" + res["id"], "artist": res["artist"], "title": res["title"],
+                                       "album": res["album"], "track": res.get("track")})
+                # no cover found: the song as the station wrote it, so it still goes on the list of songs heard
+                p = art_mod.parse(q.get("q", ""))
+                artist, title = ((p[1], p[0]) if p[2] else (p[0], p[1])) if p else ("", "")
+                return self._json({"art": None, "artist": artist, "title": title, "album": "", "track": None, "song": bool(p)})
             if route == "artlinks":
                 cc = _country(a.cfg, q.get("cc", ""))
                 L = art_mod.links(q.get("track", ""), cc, q.get("artist", ""), q.get("title", ""))
@@ -738,7 +755,7 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send(200, im[1], im[0], {"Cache-Control": "public, max-age=86400"})
             if route == "geocode":
                 try:
-                    return self._json({"results": geocode(q.get("q", ""), q.get("region", ""))})
+                    return self._json({"results": geo.geocode(q.get("q", ""), q.get("region", ""), suggest=q.get("suggest") == "1")})
                 except geo.Busy:
                     return self._json({"results": [], "error": "The place search services are busy right now. Try again in a "
                                        "minute, or enter your coordinates by hand below."})
@@ -778,10 +795,22 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json({"engine": e.perf, "cpu_s": round(ru.ru_utime + ru.ru_stime, 1), "rss_mb": round(ru.ru_maxrss / 1024, 1),
                                    "threads": threading.active_count(), "clients": len(e.clients), "uptime_s": round(time.time() - a.t0),
                                    "caught_up": getattr(e, "caught_up", 0), "sound_trims": sum(c.dropped for c in list(e.clients) if isinstance(c, engine_mod.AudioClient))})
-            if route == "planes/info":                    # registration, type, operator, photo and route (adsbdb)
+            if route == "planes/info":                    # registration, model, operator, photo, route (adsbdb, adsb.lol)
                 if os.environ.get("NO_NET"):
                     return self._json({"aircraft": None, "route": None, "ok": False})
-                return self._json(PLANEINFO.get(q.get("icao", ""), q.get("callsign", "")))
+                a.airports.ensure()                       # the airports list, downloaded the first time planes are looked up
+                def coord(k):
+                    try:
+                        v = float(q.get(k, ""))
+                        return v if -180 <= v <= 180 else None
+                    except ValueError:
+                        return None
+                return self._json(PLANEINFO.get(q.get("icao", ""), q.get("callsign", ""), coord("lat"), coord("lon"),
+                                                home=(a.cfg.get("lat"), a.cfg.get("lon")), chosen=q.get("chosen") == "1"))
+            if route == "planes/trace":                   # the path flown so far, from the adsb.lol network
+                if os.environ.get("NO_NET"):
+                    return self._json({"points": [], "ok": False})
+                return self._json(PLANEINFO.trace(q.get("icao", "")))
             if route == "planes/history":
                 return self._json({"frames": list(e.adsb_hist), "home": [a.cfg["lat"], a.cfg["lon"]]})
             if route == "mqtt":
@@ -810,9 +839,13 @@ class Handler(BaseHTTPRequestHandler):
             return self._json({"config": pub, "changed": sorted(changed)})
         if route == "mqtt/test":
             m = dict(a.cfg["mqtt"])
+            saved = (str(m.get("host") or ""), str(m.get("port") or 1883))
             for k in ("host", "port", "user", "pass"):
                 if body.get(k) not in (None, ""):
                     m[k] = body[k]
+            # the saved password is only ever sent to the saved broker; testing another address needs its own password
+            if (str(m.get("host") or ""), str(m.get("port") or 1883)) != saved and body.get("pass") in (None, ""):
+                m["pass"] = ""
             if not m.get("host"):
                 return self._json({"ok": False, "message": "Type the address of your MQTT broker first (often the Home Assistant computer)."})
             okc, msg = mqtt_mod.test_connection(m)
@@ -1133,6 +1166,34 @@ class Handler(BaseHTTPRequestHandler):
                 pass
 
 
+HOST_REFUSED = ("Skywave does not answer to this address. Open it by its IP address or local name, set ALLOWED_HOSTS to "
+                "the names you use, or turn on sign-in (AUTH_USER and AUTH_PASS).")
+LOCAL_SUFFIXES = (".local", ".lan", ".home", ".home.arpa", ".internal", ".localdomain")
+
+
+def host_allowed(host):
+    """Is this Host header a name a home network would use? IP addresses, localhost, single-word names, the usual local
+    suffixes, this machine's own name and anything listed in ALLOWED_HOSTS ("*" allows every name)."""
+    h = (host or "").strip().lower()
+    if h.startswith("["):
+        h = h[1:h.find("]")] if "]" in h else h[1:]
+    elif h.count(":") == 1:
+        h = h.split(":")[0]
+    h = h.rstrip(".")
+    extra = [x.strip().lower() for x in os.environ.get("ALLOWED_HOSTS", "").split(",") if x.strip()]
+    if "*" in extra or h in extra:
+        return True
+    if not h:
+        return False
+    try:
+        ipaddress.ip_address(h)
+        return True
+    except ValueError:
+        pass
+    me = socket.gethostname().lower()
+    return h == "localhost" or "." not in h or h.endswith(LOCAL_SUFFIXES) or h in (me, me.split(".")[0])
+
+
 def tune_socket(sock):
     """Notice a vanished device (phone asleep, wifi dropped, tab killed) within about 15 s instead of minutes, so it stops
     holding a listener slot and the radio's attention."""
@@ -1216,47 +1277,6 @@ def _orbit_loop():
         time.sleep(3600)
 
 
-def _local_ips():
-    ips = {"127.0.0.1"}
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(("10.255.255.255", 1))
-        ips.add(s.getsockname()[0])
-        s.close()
-    except OSError:
-        pass
-    try:
-        for r in socket.getaddrinfo(socket.gethostname(), None, socket.AF_INET):
-            ips.add(r[4][0])
-    except OSError:
-        pass
-    return sorted(ips)
-
-
-def _tls_files(data_dir):
-    """A self-signed certificate, made once with the openssl program, so phones can use their compass and motion sensors
-    (browsers only allow those on https pages). Browsers warn about it once; choose to continue."""
-    if not shutil.which("openssl"):
-        return None
-    d = os.path.join(data_dir, "tls")
-    cert, key, stamp = os.path.join(d, "cert.pem"), os.path.join(d, "key.pem"), os.path.join(d, "names.txt")
-    ips = _local_ips()
-    names = ",".join(ips)
-    try:
-        if not (os.path.isfile(cert) and os.path.isfile(key) and open(stamp).read() == names):
-            os.makedirs(d, exist_ok=True)
-            san = ",".join(["DNS:localhost", "DNS:" + socket.gethostname()] + ["IP:" + i for i in ips])
-            subprocess.run(["openssl", "req", "-x509", "-newkey", "rsa:2048", "-nodes", "-keyout", key, "-out", cert, "-days", "3650",
-                            "-subj", "/CN=Skywave", "-addext", "subjectAltName=" + san], check=True, capture_output=True, timeout=60)
-            os.chmod(key, 0o600)
-            with open(stamp, "w") as f:
-                f.write(names)
-        return cert, key
-    except Exception as e:
-        print("HTTPS is off (could not make a certificate): %s" % e, flush=True)
-        return None
-
-
 def main():
     global APP
     # Python lets one thread run at a time. A thread busy with plain Python holds that lock for up to 5 ms at a stretch, and
@@ -1283,22 +1303,6 @@ def main():
             finally:
                 self.busy.release()
     srv = Srv(("0.0.0.0", port), Handler)
-    https_port = int(os.environ.get("HTTPS_PORT") or (port + 1))
-    want_tls = os.environ.get("HTTPS", "0" if os.environ.get("SIM") == "1" else "1") != "0"
-    tls = _tls_files(APP.cfg["data_dir"]) if want_tls else None
-    srv2 = None
-    if tls:
-        try:
-            srv2 = Srv(("0.0.0.0", https_port), Handler)
-            ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-            ctx.minimum_version = ssl.TLSVersion.TLSv1_2
-            ctx.load_cert_chain(*tls)
-            srv2.socket = ctx.wrap_socket(srv2.socket, server_side=True, do_handshake_on_connect=False)
-            APP.https_port = https_port
-            threading.Thread(target=srv2.serve_forever, daemon=True).start()
-        except OSError as e:
-            print("HTTPS is off (port %d: %s)" % (https_port, e), flush=True)
-            srv2 = None
     APP.eng.start()
     threading.Thread(target=_orbit_loop, daemon=True).start()
     ip = "this-computer"
@@ -1310,8 +1314,6 @@ def main():
     except OSError:
         pass
     print("Skywave %s is running. Open  http://%s:%d  in a browser." % (VERSION, ip, port), flush=True)
-    if srv2:
-        print("For phone compass and motion sensors use  https://%s:%d  (your browser warns about the certificate once: continue)." % (ip, https_port), flush=True)
     try:
         srv.serve_forever()
     except KeyboardInterrupt:

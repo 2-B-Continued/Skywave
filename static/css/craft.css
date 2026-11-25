@@ -74,9 +74,9 @@ p, .sub, .hw-sub, .banner .txt, .cta .txt, li, dd { text-wrap: pretty; }
 @keyframes star-pop { 0% { scale: .6; rotate: -18deg; } 60% { scale: 1.18; rotate: 6deg; } 100% { scale: 1; rotate: 0deg; } }
 
 /* ---------------------------------------------------------------- embellishments out */
-:root[data-style]:not([data-style="console"]) .freq { text-shadow: none; }
+:root[data-style]:not([data-style="walnut"]) .freq { text-shadow: none; }
 :root[data-style] .freq small { text-shadow: none; }
-:root[data-style]:not([data-style="terminal"]):not([data-style="console"]) .freq small { font-family: var(--sans); font-weight: 500; }
+:root[data-style]:not([data-style="terminal"]) .freq small { font-family: var(--sans); font-weight: 500; }
 
 /* ---------------------------------------------------------------- the main feature, bigger */
 .sig-dot { display: inline-block; width: clamp(8px, .1em, 13px); height: clamp(8px, .1em, 13px); border-radius: 50% !important; background: var(--amber); vertical-align: middle; margin-left: .18em; box-shadow: none !important;

@@ -8,15 +8,13 @@ const { chromium } = require('playwright'); const { spawn } = require('child_pro
   await p.goto('http://127.0.0.1:18102/#space'); await p.waitForTimeout(2500);
   let ok = true; const chk = (n, c, x) => { console.log(c ? 'ok  ' : 'FAIL', n, x === undefined ? '' : JSON.stringify(x)); if (!c) ok = false; };
   const r = await p.evaluate(() => ({
-    a: RS.align.geo(-33.92, 18.42, 28), b: RS.align.geo(0, 0, 0), c: RS.align.geo(51.5, 0, 0), d: RS.align.geo(40, -100, -100), e: RS.align.geo(0, 0, 180),
-    t1: RS.align.turn(10, 350), t2: RS.align.turn(350, 10)
+    a: RS.align.geo(-33.92, 18.42, 28), b: RS.align.geo(0, 0, 0), c: RS.align.geo(51.5, 0, 0), d: RS.align.geo(40, -100, -100), e: RS.align.geo(0, 0, 180)
   }));
   chk('equator below satellite: el 90', Math.abs(r.b.el - 90) < 0.01, r.b);
   chk('London to 0E: az 180, el ~31', Math.abs(r.c.az - 180) < 0.01 && Math.abs(r.c.el - 31.4) < 0.5, r.c);
   chk('same longitude northern: az 180, skew 0', Math.abs(r.d.az - 180) < 0.01 && Math.abs(r.d.skew) < 0.01, r.d);
   chk('far side of earth: below horizon', r.e.up === false, r.e);
   chk('south of the equator to 28E: north-east-ish, high', r.a.az > 0 && r.a.az < 90 && r.a.el > 45, r.a);
-  chk('turn helper', r.t1 === 20 && r.t2 === -20, [r.t1, r.t2]);
   await p.evaluate(() => { const w = document.getElementById('sp-aim-wrap'); if (w) w.open = true; });   // the card lives in a closed section
   await p.waitForSelector('#aim-card', { state: 'visible', timeout: 5000 }); await p.waitForTimeout(2500);
   chk('card present', (await p.$$('#aim-sat option')).length > 0);
@@ -26,9 +24,8 @@ const { chromium } = require('playwright'); const { spawn } = require('child_pro
   chk('southern skew sane', await p.evaluate(() => Math.abs(RS.align.geo(-33.92, 18.42, 28).skew) < 90));
   await p.selectOption('#aim-mode', 'geo'); await p.fill('#aim-lon', '156'); await p.waitForTimeout(300);
   chk('geo readout shows', /Geostationary satellite at 156/.test(await p.innerText('#aim-out')), (await p.innerText('#aim-out')).slice(0, 120));
-  await p.evaluate(() => { RS.align.heading = 20; RS.align.tilt = 10; RS.align.mode = 'geo'; document.getElementById('aim-lon').dispatchEvent(new Event('input')); });
-  await p.waitForTimeout(300);
-  chk('turn guidance appears', /Turn (left|right)/.test(await p.innerText('#aim-out')));
+  chk('the bearing is explained as from true north', /true north/.test(await p.innerText('#aim-out')));
+  chk('no phone compass button', !(await p.$('#aim-sens')));
   chk('no page errors', errs.length === 0, errs);
   await p.screenshot({ path: '/tmp/aim.png' }); await b.close(); srv.kill(); console.log(ok ? 'PASS' : 'FAIL'); process.exit(ok ? 0 : 1);
 })();

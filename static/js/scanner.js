@@ -10,7 +10,7 @@
   Sc.bankId = RS.store.get('scanbank', 'cb_uhf');
   const bankById = id => RS.banks.find(b => b.id === id);
   const shortName = n => String(n || '').replace(/\s*\(\d+\s+channels?\)\s*$/i, '');
-  const count = b => { const r = (b.ranges || [])[0]; return (b.channels || []).length + (r ? Math.floor((r.stop - r.start) / r.step) + 1 : 0); };
+  const count = b => { const r = (b.ranges || [])[0]; return (b.channels || []).length + (r && r.step >= 100 ? Math.floor((r.stop - r.start) / r.step) + 1 : 0); };
   const emerg = c => /emergency|distress/i.test(c.label || '') || /^CH(5|35)\b/.test(c.label || '');
   const set = (el, t) => RS.setText(el, t);
   const show = (el, on) => { if (el && el.hidden === !!on) el.hidden = !on; };
@@ -24,7 +24,7 @@
   }
   function expand(b) {
     const out = (b.channels || []).map(c => Object.assign({}, c, split(c)));
-    (b.ranges || []).forEach(r => { for (let f = r.start; f <= r.stop + 1; f += r.step) out.push({ f: Math.round(f), label: '', name: '', num: null, mode: r.mode, bw: r.bw }); });
+    (b.ranges || []).forEach(r => { if (!(r.step >= 100)) return; for (let f = r.start; f <= r.stop + 1 && out.length < 20000; f += r.step) out.push({ f: Math.round(f), label: '', name: '', num: null, mode: r.mode, bw: r.bw }); });
     if (out.length && out.every(c => c.num != null)) return out.sort((a, z) => a.num - z.num || a.f - z.f);
     return out.sort((a, z) => a.f - z.f);
   }
@@ -161,7 +161,7 @@
   function cell(c, n, max, cur, ign) {
     const head = c.num != null ? String(c.num) : (c.name || mhz(c.f));
     const sub = c.num != null ? (c.name || '') : '';
-    return '<button class="scn-ch' + (cur ? ' cur' : '') + (ign ? ' ign' : '') + (emerg(c) ? ' em' : '') + '" type="button" data-act="sc-chan" data-f="' + c.f + '" data-mode="' + c.mode + '" data-bw="' + (c.bw || '') + '"' +
+    return '<button class="scn-ch' + (cur ? ' cur' : '') + (ign ? ' ign' : '') + (emerg(c) ? ' em' : '') + '" type="button" data-act="sc-chan" data-f="' + c.f + '" data-mode="' + esc(c.mode) + '" data-bw="' + (c.bw || '') + '"' +
       ' title="' + esc((c.label || '') + ' ' + RS.fmt(c.f, c.mode) + (n ? ', stopped here ' + n + ' time' + (n > 1 ? 's' : '') : '') + (ign ? ', ignored' : '') + (emerg(c) ? ', emergency channel' : '')) + '">' +
       '<span class="scn-ch-a"><b>' + esc(head) + '</b>' + (n ? '<em>' + n + '</em>' : '') + '</span>' +
       '<span class="scn-ch-f">' + mhz(c.f) + '</span>' +
@@ -195,7 +195,7 @@
     const el = $('#sc-log'); if (!el) return;
     const L = RS.scanLog.slice(0, 40);
     const h = L.length ? '<table class="scn-tbl"><thead><tr><th>Time</th><th>Channel</th><th>Frequency</th><th>Length</th></tr></thead><tbody>' +
-      L.map(e => '<tr data-act="sc-chan" data-f="' + e.f + '" data-mode="' + (e.mode || '') + '" class="click"><td>' + RS.clock(e.t) + '</td><td>' + esc(e.label || '-') + '</td><td class="mono">' + RS.fmt(e.f) + '</td><td>' + RS.dur(e.dur) + '</td></tr>').join('') + '</tbody></table>'
+      L.map(e => '<tr data-act="sc-chan" data-f="' + e.f + '" data-mode="' + esc(e.mode || '') + '" class="click"><td>' + RS.clock(e.t) + '</td><td>' + esc(e.label || '-') + '</td><td class="mono">' + RS.fmt(e.f) + '</td><td>' + RS.dur(e.dur) + '</td></tr>').join('') + '</tbody></table>'
       : '<div class="scn-empty"><b>Nothing yet</b><span>Each time the scanner stops on a channel, it is listed here.</span></div>';
     if (el._h !== h) { el._h = h; el.innerHTML = h; }
   };

@@ -80,6 +80,9 @@ def default_banks(region_id=regions.DEFAULT_REGION, country=""):
     return out
 
 
+MODES = ("nfm", "am", "wfm", "usb", "lsb", "cw")   # demodulators a scanner list may ask for
+MAX_CHANNELS = 20000
+
 class BankStore:
     def __init__(self, path, region_id=regions.DEFAULT_REGION, country=""):
         self.path = path
@@ -142,11 +145,21 @@ class BankStore:
         for c in bank.get("channels", []):
             mode = c.get("mode", "nfm")
             clean["channels"].append({"f": int(float(c["f"])), "label": str(c.get("label", ""))[:40],
-                                      "mode": mode if mode in ("nfm", "am", "wfm", "usb", "lsb", "cw") else "nfm",
+                                      "mode": mode if mode in MODES else "nfm",
                                       "bw": float(c.get("bw", 12500))})
+        total = len(clean["channels"])
         for r in bank.get("ranges", []):
-            clean["ranges"].append({"start": float(r["start"]), "stop": float(r["stop"]), "step": float(r["step"]),
-                                    "mode": r.get("mode", "nfm"), "bw": float(r.get("bw", 12500)),
+            # a range must be finite, run upwards in real steps and stay a sensible size: a zero, negative or tiny step
+            # would make expand() loop forever on the radio thread and in every browser
+            start, stop, step = float(r["start"]), float(r["stop"]), float(r["step"])
+            if not (0 < start <= stop <= 2e9 and 100 <= step <= 1e8):
+                raise ValueError("a range needs a start below its end and a step of at least 100 Hz")
+            total += int((stop - start) // step) + 1
+            if total > MAX_CHANNELS:
+                raise ValueError("a list can hold at most %d channels" % MAX_CHANNELS)
+            mode = r.get("mode", "nfm")
+            clean["ranges"].append({"start": start, "stop": stop, "step": step,
+                                    "mode": mode if mode in MODES else "nfm", "bw": float(r.get("bw", 12500)),
                                     "label": str(r.get("label", ""))[:20]})
         for i, b in enumerate(self.banks):
             if b["id"] == clean["id"]:
@@ -166,7 +179,9 @@ class BankStore:
         chans = [dict(c) for c in bank.get("channels", [])]
         for r in bank.get("ranges", []):
             f = r["start"]
-            while f <= r["stop"] + 1:
+            if not r["step"] > 0:                    # lists saved before ranges were checked
+                continue
+            while f <= r["stop"] + 1 and len(chans) < MAX_CHANNELS:
                 chans.append({"f": round(f), "label": "%s %.3f" % (r.get("label", ""), f / 1e6),
                               "mode": r["mode"], "bw": r["bw"]})
                 f += r["step"]

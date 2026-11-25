@@ -3,7 +3,7 @@
 // NODE_PATH=$(npm root -g) node tests/pw_fit.js      STYLES=skywave,bento PAGES=radio,home to narrow it down
 const { chromium } = require('playwright'); const { spawn } = require('child_process'); const fs = require('fs'), os = require('os'), path = require('path');
 const PORT = 18132;
-const STYLES = (process.env.STYLES || 'skywave,aurora,classic,lumen,bento,folio,terminal,brut,ticket,console').split(',');
+const STYLES = (process.env.STYLES || 'skywave,depth,relief,walnut,riot,bento,folio,terminal,brut,ticket').split(',');
 const PAGES = (process.env.PAGES || 'home,radio,scanner,planes,ships,sondes,messages,space,ham,sensors,explore,library,lab,settings').split(',');
 (async () => {
   const d = fs.mkdtempSync(path.join(os.tmpdir(), 'fit-'));

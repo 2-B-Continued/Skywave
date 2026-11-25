@@ -1,8 +1,8 @@
-/* motion.css - the parts of the motion layer that CSS does best: hover physics, sheens, spotlights, the drifting aurora.
+/* motion.css - the parts of the motion layer that CSS does best: hover physics, sheens, spotlights.
    Smooth scrolling, entrances, split titles and magnetic pulls are in motion.js (GSAP, ScrollTrigger, SplitText, Lenis).
    Driven by <html data-motion="full|light|off"> (set by motion.js). Hover effects need a mouse and full motion; phones get
-   none of the per-frame work. Each style keeps its own shape language: Aurora glows and stretches its corner brackets,
-   Lumen trails light, Bento springs like a toy, Folio sweeps ink rules, Terminal blinks a cursor. Loaded last. */
+   none of the per-frame work. Each style keeps its own shape language: Depth lifts windows toward you,
+   Relief presses in, Walnut keys travel, Bento springs like a toy, Folio sweeps ink rules, Terminal blinks a cursor. Loaded last. */
 
 :root { --ez: cubic-bezier(.16, 1, .3, 1); --ez-back: cubic-bezier(.34, 1.56, .64, 1); --ez-print: cubic-bezier(.77, 0, .18, 1); }
 @property --sx-spot { syntax: '<percentage>'; inherits: false; initial-value: 0%; }
@@ -15,11 +15,10 @@
 :root[data-style="folio"] .page-head h2 > div { padding: .06em .1em .14em; margin: -.06em -.1em -.14em; }
 .sx-shine { background: linear-gradient(100deg, var(--ink) 38%, color-mix(in srgb, var(--teal) 55%, #fff) 50%, var(--ink) 62%) 120% 0 / 260% 100% no-repeat; -webkit-background-clip: text; background-clip: text; color: transparent; }
 
-/* ---------- the light that trails the cursor (Lumen, Skywave). A gradient, not a rounded box, so Skywave's square rule is fine */
+/* ---------- the light that trails the cursor (Depth). A gradient, not a rounded box */
 .sx-glow { position: fixed; left: -400px; top: -400px; width: 800px; height: 800px; z-index: -1; pointer-events: none; opacity: 0; transition: opacity .9s ease; will-change: transform; background: radial-gradient(closest-side, color-mix(in srgb, var(--teal) 20%, transparent), transparent); }
 .sx-glow.on { opacity: 1; }
-:root[data-style="aurora"] .sx-glow { background: radial-gradient(closest-side, color-mix(in srgb, var(--amber) 13%, transparent), transparent); }
-:root:not([data-style="lumen"]):not([data-style="aurora"]):not([data-style="skywave"]) .sx-glow, :root:not([data-motion="full"]) .sx-glow { display: none; }
+:root:not([data-style="depth"]) .sx-glow, :root:not([data-motion="full"]) .sx-glow { display: none; }
 
 /* ---------- shared hover physics: every control eases instead of snapping (mouse + full motion only) */
 @media (hover: hover) and (pointer: fine) {
@@ -28,58 +27,30 @@
   }
 }
 
-/* =========================================================== AURORA */
-/* the aurora: two blurred layers drifting on different, unrelated periods so the sky never repeats. Only with full motion:
-   on phones it stays still (moving blur starves the audio thread there). */
-@keyframes sx-aurora-a { 0% { transform: translate3d(-4%, -3%, 0) scale(1) rotate(0deg); } 50% { transform: translate3d(3%, 2%, 0) scale(1.12) rotate(7deg); } 100% { transform: translate3d(-1%, 4%, 0) scale(1.05) rotate(-5deg); } }
-@keyframes sx-aurora-b { 0% { transform: translate3d(5%, 3%, 0) scale(1.08); opacity: .55; } 50% { transform: translate3d(-4%, -2%, 0) scale(.96); opacity: .9; } 100% { transform: translate3d(2%, -5%, 0) scale(1.14); opacity: .65; } }
-:root[data-style="aurora"][data-motion="full"] body::before { animation: sx-aurora-a 46s ease-in-out infinite alternate; will-change: transform; }
-:root[data-style="aurora"][data-motion="full"] body::after { content: ""; position: fixed; inset: -25%; z-index: -1; pointer-events: none; background: radial-gradient(28% 24% at 72% 62%, color-mix(in srgb, var(--teal) 34%, transparent), transparent 70%), radial-gradient(22% 30% at 26% 78%, color-mix(in srgb, var(--hot-c, var(--amber)) 24%, transparent), transparent 70%); filter: blur(64px); animation: sx-aurora-b 63s ease-in-out infinite alternate; will-change: transform, opacity; }
-:root[data-style="aurora"]:not([data-motion="full"]) body::before { animation: none; }
-
+/* =========================================================== DEPTH: windows come toward you under the pointer, with a highlight where it is */
 @media (hover: hover) and (pointer: fine) {
-  /* buttons: a beam of light slides across the parallelogram */
-  :root[data-style="aurora"][data-motion="full"] .btn { background-image: linear-gradient(105deg, transparent 38%, color-mix(in srgb, #fff 30%, transparent) 50%, transparent 62%); background-size: 280% 100%; background-position: 140% 0; background-repeat: no-repeat; }
-  :root[data-style="aurora"][data-motion="full"] .btn.primary { background-image: linear-gradient(105deg, transparent 38%, color-mix(in srgb, #fff 38%, transparent) 50%, transparent 62%), linear-gradient(100deg, var(--teal), var(--teal-hi)); background-size: 280% 100%, 100% 100%; background-position: 140% 0, 0 0; }
-  :root[data-style="aurora"][data-motion="full"] .btn:hover { background-position: -40% 0, 0 0; }
-  :root[data-style="aurora"][data-motion="full"] .btn:active { scale: .97; }
-  /* cards: a warm spotlight follows the cursor and the corner brackets reach further out */
-  :root[data-style="aurora"][data-motion="full"] :is(.card, .tile, .list-opt, .station, .sel-card:not(.glass)) {
-    background:
-      radial-gradient(460px circle at var(--mx, 50%) var(--my, 50%), color-mix(in srgb, var(--amber) var(--sx-spot), transparent), transparent 65%),
-      linear-gradient(var(--brk), var(--brk)) top left / var(--sx-brl) 1px no-repeat, linear-gradient(var(--brk), var(--brk)) top left / 1px var(--sx-brl) no-repeat,
-      linear-gradient(var(--brk), var(--brk)) top right / var(--sx-brl) 1px no-repeat, linear-gradient(var(--brk), var(--brk)) top right / 1px var(--sx-brl) no-repeat,
-      linear-gradient(var(--brk), var(--brk)) bottom left / var(--sx-brl) 1px no-repeat, linear-gradient(var(--brk), var(--brk)) bottom left / 1px var(--sx-brl) no-repeat,
-      linear-gradient(var(--brk), var(--brk)) bottom right / var(--sx-brl) 1px no-repeat, linear-gradient(var(--brk), var(--brk)) bottom right / 1px var(--sx-brl) no-repeat,
-      color-mix(in srgb, var(--ink) 4%, transparent);
-  }
-  :root[data-style="aurora"][data-motion="full"] :is(.card, .tile, .list-opt, .station, .sel-card:not(.glass)):hover { --sx-spot: 15%; --sx-brl: 30px; }
-  :root[data-style="aurora"][data-motion="full"] details.card:hover { --sx-spot: 7%; }
-  :root[data-style="aurora"][data-motion="full"] .tile:hover svg { scale: 1.12; background: color-mix(in srgb, var(--amber) 48%, transparent); }
-  :root[data-style="aurora"][data-motion="full"] .tile svg { transition: scale .6s var(--ez), background-color .6s var(--ez); }
-  :root[data-style="aurora"][data-motion="full"] .tab:not([aria-selected="true"]):hover { background: color-mix(in srgb, var(--ink) 9%, transparent); clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%); }
-  :root[data-style="aurora"][data-motion="full"] .hw-link:hover { box-shadow: inset 0 1px 0 color-mix(in srgb, var(--amber) 70%, transparent); }
-}
-/* the selected dock tab and pressed chips light up rather than snap */
-:root[data-style="aurora"]:not([data-motion="off"]) .tab[aria-selected="true"] svg { filter: drop-shadow(0 0 8px color-mix(in srgb, var(--amber) 80%, transparent)); }
-
-/* =========================================================== LUMEN */
-@media (hover: hover) and (pointer: fine) {
-  :root[data-style="lumen"][data-motion="full"] .tab:not([aria-selected="true"]):hover { translate: 4px 0; }
-  :root[data-style="lumen"][data-motion="full"] .tab svg { transition: color .3s ease, scale .5s var(--ez); }
-  :root[data-style="lumen"][data-motion="full"] .tab:hover svg { scale: 1.12; color: var(--teal); }
-  :root[data-style="lumen"][data-motion="full"] :is(.card, .tile, .station, .list-opt, .th-card):hover { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--teal) 32%, transparent), 0 20px 50px -30px var(--teal); }
-  :root[data-style="lumen"][data-motion="full"] .tile:hover svg { scale: 1.1; box-shadow: 0 0 30px -6px var(--teal); }
-  :root[data-style="lumen"][data-motion="full"] .tile svg { transition: scale .6s var(--ez), box-shadow .6s var(--ez); }
-  :root[data-style="lumen"][data-motion="full"] .btn.primary:hover { box-shadow: 0 0 34px -2px var(--teal); }
+  :root[data-style="depth"][data-motion="full"] :is(.card, .ho-tile, .station, .sat-card, .sensor):hover { translate: 0 -4px; scale: 1.012;
+    box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 30%, transparent), 0 2px 4px #0002, 0 60px 110px -40px #000d; }
+  :root[data-style="depth"][data-motion="full"] :is(.card, .ho-tile):hover { background-image: radial-gradient(500px circle at var(--mx, 50%) var(--my, 50%), color-mix(in srgb, #fff 9%, transparent), transparent 65%); }
+  :root[data-style="depth"][data-motion="full"] .tab:not([aria-selected="true"]):hover { scale: 1.1; background: color-mix(in srgb, var(--ink) 14%, transparent); }
+  :root[data-style="depth"][data-motion="full"] .btn:hover:not([disabled]) { box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 26%, transparent), 0 10px 24px -12px #000a; }
 }
 
-/* =========================================================== CLASSIC */
+/* =========================================================== RELIEF: hovering a control lifts it a little higher out of the surface */
 @media (hover: hover) and (pointer: fine) {
-  :root[data-style="classic"][data-motion="full"] :is(.tile, .station, .list-opt, .th-card, .hw-link):hover { translate: 0 -3px; box-shadow: 0 18px 40px -22px color-mix(in srgb, var(--ink) 55%, transparent); }
-  :root[data-style="classic"][data-motion="full"] .tile:hover { transform: none; }
-  :root[data-style="classic"][data-motion="full"] :is(.card, .tile):hover { background-image: radial-gradient(380px circle at var(--mx, 50%) var(--my, 50%), color-mix(in srgb, var(--teal) 8%, transparent), transparent 70%); }
-  :root[data-style="classic"][data-motion="full"] .btn:active { scale: .97; }
+  :root[data-style="relief"][data-motion="full"] :is(.btn, .chip, .station, .tab):not([aria-pressed="true"]):not([aria-selected="true"]):not(.on):hover { box-shadow: 8px 8px 18px var(--nm-dk), -8px -8px 18px var(--nm-lt); }
+}
+
+/* =========================================================== WALNUT: the lamp warms under the pointer */
+@media (hover: hover) and (pointer: fine) {
+  :root[data-style="walnut"][data-motion="full"] .dial-card.lit::after { background: radial-gradient(380px circle at var(--mx, 50%) var(--my, 50%), #ffb3472e, transparent 60%); }
+}
+
+/* =========================================================== RIOT: stickers wobble and jump the queue when you point at them */
+@media (hover: hover) and (pointer: fine) {
+  :root[data-style="riot"][data-motion="full"] .tab:not([aria-selected="true"]):hover { rotate: 0deg; scale: 1.08; }
+  :root[data-style="riot"][data-motion="full"] .ho-tiles > .ho-tile:hover { rotate: 0deg; translate: -3px -3px; z-index: 2; }
+  :root[data-style="riot"][data-motion="full"] .btn:hover:not([disabled]) { rotate: -1.5deg; }
 }
 
 /* =========================================================== BENTO: springy, like pressing a chunky toy */
@@ -138,7 +109,6 @@
   :root[data-style="ticket"][data-motion="full"] .btn:hover { rotate: -1.5deg; }
   :root[data-style="ticket"][data-motion="full"] :is(.tile, .hw-link):hover { translate: 0 -4px; rotate: .6deg; }
   :root[data-style="skywave"][data-motion="full"] :is(.tile, .hw-link, .station):hover { translate: 0 -3px; }
-  :root[data-style="console"] .tile, :root[data-style="console"] .chip, :root[data-style="console"] .tab { transition: transform .06s, box-shadow .06s; }
 }
 
 /* =========================================================== TOUCH: things answer your finger (all styles, unless motion is off) */

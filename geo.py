@@ -49,6 +49,8 @@ def _clean(v, n=60):
 
 
 def fetch_json(url, timeout=8):
+    if os.environ.get("NO_NET"):
+        raise OSError("outside requests are turned off (NO_NET)")
     req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept-Language": "en"})
     with urllib.request.urlopen(req, timeout=timeout) as r:
         return json.loads(r.read(400000).decode("utf-8", "replace"))
@@ -231,14 +233,58 @@ def _enrich(r, fetch):
         pass
 
 
-def geocode(query, region="", fetch=fetch_json, limit=8):
+# the address parts that name a suburb or town, most specific first ("neighbourhood" is usually too small to be useful)
+SUBURB_KEYS = ("suburb", "town", "village", "hamlet", "city_district", "quarter", "locality", "district", "city")
+
+
+def _postcode_eq(a, b):
+    return bool(a) and bool(b) and a.replace(" ", "").upper() == b.replace(" ", "").upper()
+
+
+def _suburb(r, postcode, fetch, use_osm):
+    """For a place found by its postcode: look up which suburb or town sits at that spot and name the result after it,
+    keeping the city as its area. A postcode often covers more than one suburb; this names the one at its centre."""
+    lat, lon = r["lat"], r["lon"]
+    got = None
+    if use_osm:
+        try:
+            x = _osm_fetch("https://nominatim.openstreetmap.org/reverse?" + urllib.parse.urlencode(
+                {"lat": lat, "lon": lon, "zoom": 14, "format": "jsonv2", "addressdetails": 1, "accept-language": "en"}), fetch) or {}
+            a = x.get("address") or {}
+            got = (next((a[k] for k in SUBURB_KEYS if a.get(k)), ""), a.get("city") or a.get("town") or a.get("municipality") or a.get("county") or "",
+                   a.get("postcode") or "")
+        except Exception:
+            got = None
+    if not got or not got[0]:
+        try:
+            d = fetch("https://photon.komoot.io/reverse?" + urllib.parse.urlencode({"lat": lat, "lon": lon, "lang": "en", "limit": 1})) or {}
+            f = (d.get("features") or [{}])[0].get("properties") or {}
+            name = f.get("name") if f.get("type") in ("district", "locality", "city", "town", "village", "suburb") else ""
+            got = (name or f.get("district") or f.get("locality") or "", f.get("city") or f.get("county") or "", f.get("postcode") or "")
+        except Exception:
+            return
+    sub, city, pc = (_clean(v) for v in got)
+    if not sub or (pc and not _postcode_eq(pc, postcode)):
+        return                                  # the centre falls in another postcode: keep the original name
+    old = r["name"]
+    if _fold(sub) != _fold(old):
+        r["name"] = sub
+        # the old name was the postcode itself or the wider city: the city becomes the area
+        wider = city if POSTCODE.match(old) or _postcode_eq(old, postcode) else old
+        r["area"] = wider if _fold(wider) != _fold(sub) else (r["area"] if _fold(r["area"]) != _fold(sub) else "")
+    r["postcode"] = r["postcode"] or postcode
+
+
+def geocode(query, region="", fetch=fetch_json, limit=8, suggest=False):
+    """Places matching the text. suggest=True is the search-as-you-type mode: it leaves out Nominatim, whose usage policy
+    does not allow lookups on every keystroke, and asks only Open-Meteo and Photon (built for exactly this)."""
     if fetch is not fetch_json:                # tests and other callers with their own fetch: no shared memory
-        return _geocode(query, region, fetch, limit)
-    key = (" ".join(str(query).lower().split()), region or "")
+        return _geocode(query, region, fetch, limit, suggest)
+    key = (" ".join(str(query).lower().split()), region or "", bool(suggest))
     hit = _cache.get(key)
     if hit and time.time() - hit[0] < 86400:
         return hit[1]
-    res = _geocode(query, region, fetch, limit)
+    res = _geocode(query, region, fetch, limit, suggest)
     if res:
         if len(_cache) > 200:
             _cache.clear()
@@ -246,12 +292,15 @@ def geocode(query, region="", fetch=fetch_json, limit=8):
     return res
 
 
-def _geocode(query, region, fetch, limit):
+def _geocode(query, region, fetch, limit, suggest=False):
     p = parse(query, region)
     if len(p["head"]) < 2 and not p["postcode"]:
         if not p["country"]:
             return []
     found, errors = [], []
+    # Only places in one country: the one typed ("Perth, Scotland") or else the country chosen in settings.
+    # With neither, the whole world is searched.
+    only = p["country"] or p["hint"] or ""
 
     def om(name, cc):
         args = {"name": name, "count": 20, "language": "en", "format": "json"}
@@ -268,7 +317,7 @@ def _geocode(query, region, fetch, limit):
             errors.append(e)
 
     def photon():
-        args = {"q": p["text"], "limit": 10, "lang": "en"}
+        args = {"q": p["text"], "limit": 20 if only else 10, "lang": "en"}
         try:
             d = fetch("https://photon.komoot.io/api/?" + urllib.parse.urlencode(args)) or {}
             for x in d.get("features") or []:
@@ -281,6 +330,8 @@ def _geocode(query, region, fetch, limit):
 
     def osm():
         args = {"q": p["text"], "format": "jsonv2", "addressdetails": 1, "limit": 10, "accept-language": "en", "dedupe": 1}
+        if only:
+            args["countrycodes"] = only.lower()
         try:
             for x in _osm_fetch("https://nominatim.openstreetmap.org/search?" + urllib.parse.urlencode(args), fetch) or []:
                 try:
@@ -291,10 +342,10 @@ def _geocode(query, region, fetch, limit):
             errors.append(e)
             photon()                            # Nominatim is busy or down: ask Photon instead
 
-    jobs = [threading.Thread(target=osm)]
-    cc = p["country"] or ""
+    jobs = [threading.Thread(target=photon if suggest else osm)]
+    cc = only
     if p["postcode"]:
-        jobs.append(threading.Thread(target=om, args=(p["postcode"], cc or p["hint"])))
+        jobs.append(threading.Thread(target=om, args=(p["postcode"], cc)))
     if p["head"]:
         jobs.append(threading.Thread(target=om, args=(p["head"], cc)))
     if p.get("short") and len(p["short"]) >= 3:
@@ -302,7 +353,7 @@ def _geocode(query, region, fetch, limit):
         if " " in p["short"]:
             jobs.append(threading.Thread(target=om, args=(p["short"].split()[0], cc)))
     elif p["country"] and not p["postcode"]:
-        jobs.append(threading.Thread(target=om, args=(p["text"], "")))
+        jobs.append(threading.Thread(target=om, args=(p["text"], "")))       # "Georgia": the country itself
     for j in jobs:
         j.start()
     for j in jobs:
@@ -315,6 +366,8 @@ def _geocode(query, region, fetch, limit):
     out = []
     for r in found:
         if not (-90 <= r["lat"] <= 90 and -180 <= r["lon"] <= 180) or not r["name"]:
+            continue
+        if only and r["cc"] and r["cc"] != only and not (p["country"] and _fold(r["name"]) in COUNTRY_WORDS):
             continue
         r["score"] = _score(r, p)
         dup = next((o for o in out if abs(o["lat"] - r["lat"]) < 0.03 and abs(o["lon"] - r["lon"]) < 0.03), None)
@@ -331,6 +384,14 @@ def _geocode(query, region, fetch, limit):
         out.append(r)
     out.sort(key=lambda r: -r["score"])
     out = out[:limit]
+    # a postcode on its own: name each of the top results after the suburb at that spot, not just the city
+    if p["postcode"] and not p["head"]:
+        named = [r for r in out[:3] if not r["postcode"] or _postcode_eq(r["postcode"], p["postcode"])]
+        ts = [threading.Thread(target=_suburb, args=(r, p["postcode"], fetch, i == 0 and not suggest)) for i, r in enumerate(named)]
+        for t in ts:
+            t.start()
+        for t in ts:
+            t.join(8)
     need = [r for r in out[:4] if not r["tz"]]
     ts = [threading.Thread(target=_enrich, args=(r, fetch)) for r in need]
     for t in ts:

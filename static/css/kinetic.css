@@ -38,13 +38,6 @@ img.art-in { animation: kx-art-in .8s var(--ease-smooth, ease) both; }
 
 /* per style */
 :root[data-style="skywave"] .np-art { --np-r: 22px; box-shadow: 0 40px 80px -30px #000e, inset 0 1px 0 #fff4, 0 0 0 1px #ffffff26; }
-:root[data-style="aurora"] .np.on { align-items: center; text-align: center; }
-:root[data-style="aurora"] .np-art { --np-r: 50%; box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 60%, transparent), 0 0 0 10px color-mix(in srgb, var(--accent) 8%, transparent), 0 30px 70px -30px #000; }
-:root[data-style="aurora"] .np-art::before { content: ""; position: absolute; inset: 42%; border-radius: 50%; z-index: 1; background: var(--chassis); box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 50%, transparent); }
-:root[data-style="aurora"].sound-on .np-art img { animation: kx-spin 9s linear infinite; }
-@keyframes kx-spin { to { rotate: 360deg; } }
-:root[data-style="classic"] .np-art { --np-r: 18px; }
-:root[data-style="lumen"] .np-art { --np-r: 10px; box-shadow: 0 0 0 1px #ffffff1f, 0 24px 50px -24px #000; }
 :root[data-style="bento"] .np-art { --np-r: 26px; border: 6px solid #fff; rotate: -3deg; box-shadow: 0 4px 0 #000, 0 30px 50px -24px #000a; }
 :root[data-style="folio"] .np-art { --np-r: 0; box-shadow: none; outline: 1px solid var(--inst-ink); outline-offset: 6px; }
 :root[data-style="folio"] .np-art img { filter: grayscale(1) contrast(1.15); transition: filter .6s ease; }
@@ -56,13 +49,15 @@ img.art-in { animation: kx-art-in .8s var(--ease-smooth, ease) both; }
 :root[data-style="terminal"] .np figcaption b::before { content: "> "; color: var(--accent); }
 :root[data-style="brut"] .np-art { --np-r: 0; border: 4px solid var(--inst-ink); box-shadow: 10px 10px 0 var(--amber); }
 :root[data-style="ticket"] .np-art { --np-r: 3px; border: 8px solid #fbf6ea; border-bottom-width: 30px; rotate: 2.5deg; box-shadow: 0 24px 40px -20px #000c; }
-:root[data-style="console"] .np-art { --np-r: 6px; box-shadow: inset 0 0 0 1px #000, 0 0 0 4px color-mix(in srgb, #000 60%, var(--panel)), 0 0 0 5px #ffffff14, 0 20px 40px -20px #000; }
-:root[data-style="console"] .np-art::after { background: repeating-linear-gradient(0deg, #0000004d 0 1px, transparent 1px 3px), linear-gradient(135deg, #ffffff1a, transparent 40%); mix-blend-mode: normal; }
+:root[data-style="depth"] .np-art { --np-r: 28px; box-shadow: inset 0 1px 0 #fff5, 0 0 0 1px #ffffff2e, 0 50px 90px -30px #000e; }
+:root[data-style="relief"] .np-art { --np-r: 26px; box-shadow: 0 0 0 8px var(--chassis), var(--nm-out); }
+:root[data-style="walnut"] .np-art { --np-r: 4px; box-shadow: 0 0 0 5px #1a140e, 0 0 0 6px #ffffff1a, 0 20px 40px -18px #000; }
+:root[data-style="walnut"] .np-art::after { background: linear-gradient(135deg, #ffffff26, transparent 45%); mix-blend-mode: normal; }
+:root[data-style="riot"] .np-art { --np-r: 18px; border: 5px solid #fff6e6; rotate: 3deg; box-shadow: 8px 8px 0 var(--amber), 16px 16px 0 var(--accent); }
 
 @media (max-width: 760px) {
   .np.on { flex-direction: row; align-items: center; text-align: left; width: 100%; margin-top: 4px; }
   .np-art { width: 76px; }
-  :root[data-style="aurora"] .np.on { justify-content: center; }
   :root[data-style] .np figcaption b { font-size: 17px; }
   :root[data-style="bento"] .np-art { border-width: 4px; }
   :root[data-style="ticket"] .np-art { border-width: 4px 4px 14px; }
@@ -81,7 +76,7 @@ img.art-in { animation: kx-art-in .8s var(--ease-smooth, ease) both; }
   .kx-seg { position: relative; isolation: isolate; }
   .kx-pill { position: absolute; left: 0; top: 0; z-index: -1; border-radius: var(--r-ctl, 10px); background: var(--sel); pointer-events: none;
     transition: height .32s var(--ease-io, ease-in-out), opacity .2s ease; }   /* moves are animated by kinetic.js (ease-in-out, 12% stretch) */
-  :root[data-style="console"] .kx-pill { box-shadow: inset 0 2px 6px #000c; }
+  :root[data-style="relief"] .kx-pill { box-shadow: var(--nm-in); background: var(--chassis); }
   .kx-seg.kx-ready > button[aria-pressed="true"] { background: transparent !important; box-shadow: none; }
   .kx-seg.kx-ready > button { position: relative; transition: color .25s ease; }
 
@@ -108,6 +103,10 @@ img.art-in { animation: kx-art-in .8s var(--ease-smooth, ease) both; }
     :root:not([data-motion="off"]) .tab:hover svg { animation: kx-lift .45s var(--ease-pop, ease); }
     :root:not([data-motion="off"]) .btn.primary { background-image: linear-gradient(110deg, transparent 35%, #ffffff40 50%, transparent 65%); background-size: 250% 100%; background-position: 120% 0; background-repeat: no-repeat; transition: background-position .7s var(--ease-out, ease), filter .2s ease; }
     :root:not([data-motion="off"]) .btn.primary:hover { background-position: -40% 0; }
+    /* Walnut's primary fill is itself a gradient (a lit key): the sheen goes over it instead of replacing it */
+    :root[data-style="walnut"]:not([data-motion="off"]) .btn.primary { background-image: linear-gradient(110deg, transparent 35%, #ffffff40 50%, transparent 65%), var(--pri);
+      background-size: 250% 100%, 100% 100%; background-position: 120% 0, 0 0; }
+    :root[data-style="walnut"]:not([data-motion="off"]) .btn.primary:hover { background-position: -40% 0, 0 0; }
   }
 
   /* ---------------------------------------------------------------- scroll-driven: content flows in and out as you scroll */
@@ -138,11 +137,9 @@ img.art-in { animation: kx-art-in .8s var(--ease-smooth, ease) both; }
     /* the backdrop of the whole app moves slowest of all */
     :root[data-style="skywave"]:not([data-motion="off"]) body::before { animation: kx-sky linear both; animation-timeline: scroll(root); }
     @keyframes kx-sky { from { translate: 0 0; scale: 1.15; } to { translate: 0 -14vh; scale: 1; } }
-    :root[data-style="aurora"]:not([data-motion="off"]) body::before { content: ""; position: fixed; inset: -20% -10% auto; height: 80vh; z-index: -1; pointer-events: none;
-      background: radial-gradient(50% 60% at 50% 30%, color-mix(in srgb, var(--accent) 26%, transparent), transparent 70%); animation: kx-sky linear both; animation-timeline: scroll(root); }
-
+    
     /* the bar gains a shadow once the page has moved, and a hairline shows how far down you are */
-    :root:not([data-motion="off"]):not([data-style="lumen"]) .topbar { animation: kx-bar linear both; animation-timeline: scroll(root); animation-range: 0 140px; }
+    :root:not([data-motion="off"]):not([data-style="depth"]):not([data-style="relief"]) .topbar { animation: kx-bar linear both; animation-timeline: scroll(root); animation-range: 0 140px; }
     @keyframes kx-bar { to { box-shadow: 0 16px 40px -24px #000c; } }
     .kx-progress { position: fixed; z-index: 120; left: 0; right: 0; top: 0; height: 2px; background: var(--art-c, var(--accent, var(--teal))); transform-origin: left; scale: 0 1; pointer-events: none;
       animation: kx-prog linear both; animation-timeline: scroll(root); }

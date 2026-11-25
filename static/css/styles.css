@@ -236,80 +236,267 @@
 @media (min-width: 900px) {
 }
 
-/* ======================================================================================================== AURORA
-   The observatory. Black and gold, the thinnest type, a column down the middle, a dock for navigation. */
-:root[data-style="aurora"] {
-  --f-disp: "V Poiret", "V Jura", sans-serif; --w-disp: 400; --w-num: 400; --tr-disp: -.01em; --tr-num: -.04em; --h2: clamp(48px, 6vw, 88px); --h-hero: clamp(52px, 7vw, 104px);
-  --r: 4px; --r-ctl: 2px; --r-chip: 2px; --pad: 24px;
-  --sf: color-mix(in srgb, var(--panel) 50%, transparent); --sf-2: color-mix(in srgb, var(--accent) 6%, transparent); --stroke: color-mix(in srgb, var(--accent) 22%, transparent);
-  --ctl: transparent; --ctl-stroke: color-mix(in srgb, var(--accent) 38%, transparent); --ctl-h: color-mix(in srgb, var(--accent) 12%, transparent); --ctl-ink: color-mix(in srgb, var(--accent) 55%, #fff);
-  --pri: var(--accent); --pri-ink: #140e02; --sel: var(--accent); --sel-ink: #140e02;
-  --bar: transparent; --bar-stroke: transparent; --tab-sel: transparent; --tab-sel-ink: var(--accent);
-  --inst: radial-gradient(130% 90% at 50% 0%, color-mix(in srgb, var(--accent) 14%, var(--glass)), var(--glass) 65%); --inst-stroke: color-mix(in srgb, var(--accent) 28%, transparent); --inst-ink: #fbf3df; --sig: color-mix(in srgb, var(--accent) 35%, #fff);
-  --sb: color-mix(in srgb, var(--glass) 88%, transparent); --freq: clamp(120px, 16vw, 240px);
+/* ======================================================================================================== DEPTH
+   Windows in a room. Frosted panes float at different depths in front of a softly lit space; the sections sit in a
+   floating column at the left, the player hovers under the main window, and side windows turn slightly toward you. */
+:root[data-style="depth"] {
+  --f-disp: "V Inter", system-ui, sans-serif; --w-disp: 600; --w-num: 500; --tr-disp: -.035em; --tr-num: -.045em; --h2: clamp(40px, 4.6vw, 66px); --h-hero: clamp(52px, 6.4vw, 96px);
+  --r: 32px; --r-ctl: 999px; --r-chip: 999px; --pad: 26px; --r-inst: 36px; --hw-gap: 20px;
+  --sf: color-mix(in srgb, var(--panel) 58%, transparent); --sf-2: color-mix(in srgb, var(--ink) 6%, transparent); --stroke: color-mix(in srgb, #fff 14%, transparent);
+  --elev: inset 0 1px 0 color-mix(in srgb, #fff 22%, transparent), 0 1px 2px #0002, 0 40px 80px -36px #000b; --blur: blur(40px) saturate(1.7);
+  --ctl: color-mix(in srgb, var(--ink) 9%, transparent); --ctl-h: color-mix(in srgb, var(--ink) 15%, transparent);
+  --pri: var(--ink); --pri-ink: var(--chassis); --sel: color-mix(in srgb, var(--ink) 88%, transparent); --sel-ink: var(--chassis);
+  --bar: transparent; --bar-stroke: transparent; --tab-sel: color-mix(in srgb, var(--ink) 90%, transparent); --tab-sel-ink: var(--chassis);
+  --inst: color-mix(in srgb, var(--glass) 62%, transparent); --inst-stroke: color-mix(in srgb, #fff 14%, transparent); --inst-ink: #f5f7fb;
+  --inst-elev: inset 0 1px 0 color-mix(in srgb, #fff 22%, transparent), 0 60px 120px -48px #000e; --sig: #fff;
+  --sb: color-mix(in srgb, var(--glass) 70%, transparent); --freq: clamp(110px, 13vw, 200px);
 }
-:root[data-style="aurora"] body { background: radial-gradient(90% 50% at 50% -10%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 70%), var(--chassis); background-attachment: fixed; }
-:root[data-style="aurora"] .glass { background: var(--inst); }
-:root[data-style="aurora"] :is(.btn, .chip) { clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%); padding-inline: 20px; }
-:root[data-style="aurora"] main { max-width: 1040px; }
-:root[data-style="aurora"] :is(.page-head, .hm-hero) { flex-direction: column; align-items: center; text-align: center; }
-:root[data-style="aurora"] .page-head p { margin-inline: auto; }
-:root[data-style="aurora"] #hm-title { margin-inline: auto; }
-:root[data-style="aurora"] :is(.hm-kick, .hm-acts) { justify-content: center; }
-:root[data-style="aurora"] #hm-line { margin-inline: auto; }
-:root[data-style="aurora"] h3 { text-align: left; }
+/* the room: a far wall lit from above, a floor falling away below, a pool of the accent colour where you stand */
+:root[data-style="depth"] body { background:
+  radial-gradient(70% 45% at 50% 108%, color-mix(in srgb, var(--accent) 26%, transparent), transparent 70%),
+  radial-gradient(60% 50% at 50% -10%, color-mix(in srgb, #fff 12%, transparent), transparent 70%),
+  linear-gradient(180deg, color-mix(in srgb, #fff 5%, var(--chassis)) 0%, var(--chassis) 58%, color-mix(in srgb, #000 22%, var(--chassis)) 100%); background-attachment: fixed; }
+:root[data-style="depth"] body::before { content: ""; position: fixed; left: -20%; right: -20%; bottom: -8vh; height: 48vh; z-index: -1; pointer-events: none;
+  background: repeating-linear-gradient(90deg, color-mix(in srgb, var(--ink) 9%, transparent) 0 1px, transparent 1px 90px), repeating-linear-gradient(0deg, color-mix(in srgb, var(--ink) 9%, transparent) 0 1px, transparent 1px 90px);
+  transform: perspective(600px) rotateX(64deg); transform-origin: 50% 100%; -webkit-mask: linear-gradient(transparent, #000 70%); mask: linear-gradient(transparent, #000 70%); opacity: .7; }
+:root[data-style="depth"] :is(.glass, .soundbar, .mobile-nav, .tabs) { -webkit-backdrop-filter: blur(40px) saturate(1.8); backdrop-filter: blur(40px) saturate(1.8); }
+:root[data-style="depth"] :is(.card, .ho-tile, .station) { transition: translate .5s var(--ez, ease), scale .5s var(--ez, ease), box-shadow .5s var(--ez, ease); }
+:root[data-style="depth"] .card .card { background: color-mix(in srgb, var(--ink) 5%, transparent); border-radius: 22px; }
+:root[data-style="depth"] :is(.btn, .chip) { box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 18%, transparent); }
+:root[data-style="depth"] .page-head { align-items: center; text-align: center; }
+:root[data-style="depth"] .page-head p { margin-inline: auto; }
+:root[data-style="depth"] .rdx-bands { margin-inline: auto; }
 @media (min-width: 761px) {
-  :root[data-style="aurora"] .topbar { height: 72px; }
-  :root[data-style="aurora"] .tabs { position: fixed; z-index: 31; left: 50%; translate: -50% 0; bottom: 92px; flex: none; padding: 6px 10px; gap: 0; background: color-mix(in srgb, var(--glass) 85%, transparent); border: 1px solid var(--stroke); border-radius: 6px; -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); box-shadow: 0 20px 50px -20px #000; }
-  :root[data-style="aurora"] .tab { flex-direction: column; gap: 3px; font-size: 11px; min-height: 52px; padding: 4px 9px; }
-  :root[data-style="aurora"] .tab .t { display: block !important; }
-  :root[data-style="aurora"] main { padding-bottom: 220px; }
+  :root[data-style="depth"] .topbar { display: flex; justify-content: space-between; height: 76px; padding-inline: 28px; -webkit-backdrop-filter: none; backdrop-filter: none; }
+  :root[data-style="depth"] .topbar > .m-title { display: none; }
+  /* the sections: a floating column at the left edge, icons only; the open one is a lit disc */
+  :root[data-style="depth"] .tabs { position: fixed; z-index: 40; left: 22px; top: 50%; translate: 0 -50%; flex: none; flex-direction: column; align-items: center; gap: 6px; padding: 10px 8px;
+    width: auto; max-height: calc(100vh - 160px); overflow-y: auto; border-radius: 999px; background: color-mix(in srgb, var(--panel) 52%, transparent); border: 1px solid var(--stroke); box-shadow: var(--elev); }
+  :root[data-style="depth"] .tab { width: 48px; height: 48px; min-height: 48px; padding: 0; justify-content: center; border-radius: 50%; flex: none; }
+  :root[data-style="depth"] .tab svg { width: 21px; height: 21px; margin: 0; }
+  :root[data-style="depth"] .tab-sep { width: 24px; height: 1px; margin: 4px 0; flex: none; }
+  :root[data-style="depth"] main { padding-left: 116px; padding-right: 36px; padding-bottom: 150px; perspective: 2000px; perspective-origin: 50% 30%; }
+  :root[data-style="depth"] .soundbar { left: 50%; right: auto; translate: -50% 0; bottom: 24px; width: min(880px, calc(100vw - 180px)); margin-left: 47px; border-radius: 999px; border: 1px solid var(--stroke); box-shadow: var(--inst-elev); padding: 8px 10px; }
+  /* the player is an ornament: a small grab bar floats just above it */
+  :root[data-style="depth"] .soundbar::after { content: ""; position: absolute; left: 50%; top: -14px; width: 56px; height: 5px; margin-left: -28px; border-radius: 3px; background: color-mix(in srgb, var(--ink) 30%, transparent); }
+  :root[data-style="depth"] .glide { display: none; }
+}
+/* side windows turn toward you, as if the pages were arranged around where you sit */
+@media (min-width: 1100px) {
+  :root[data-style="depth"] .rdp-grid { transform-style: preserve-3d; }
+  :root[data-style="depth"] .rdp-grid > .rdp-lists { transform: rotateY(5deg); transform-origin: right center; }
+  :root[data-style="depth"] .rdp-grid > .rdp-side { transform: rotateY(-5deg); transform-origin: left center; }
+  :root[data-style="depth"] .ho-dir { transform: rotateX(10deg); transform-origin: 50% 0; }
+  :root[data-style="depth"] .ho-tiles { perspective: 1400px; }
+  :root[data-style="depth"] .ho-tiles > .ho-tile:first-child { transform: rotateY(6deg); transform-origin: right center; }
 }
 
-/* ======================================================================================================== CLASSIC
-   Daylight instrument maker. White and stone, a black instrument with a lit readout, tight grotesque type. */
-:root[data-style="classic"] {
-  --f-body: "V Sans", "V Inter", system-ui, sans-serif; --f-disp: var(--f-body); --w-disp: 700; --w-num: 700; --tr-disp: -.045em; --tr-num: -.06em; --h2: clamp(40px, 4.6vw, 64px);
-  --r: 24px; --r-ctl: 12px; --r-chip: 999px; --pad: 22px; --r-inst: 30px;
-  --sf: var(--panel); --sf-2: color-mix(in srgb, var(--ink) 4%, var(--panel)); --stroke: color-mix(in srgb, var(--ink) 8%, transparent);
-  --elev: 0 1px 1px #0000000a, 0 2px 4px #0000000a, 0 16px 32px -16px #0000001f;
-  --sel: var(--ink); --sel-ink: var(--panel); --bar: color-mix(in srgb, var(--panel) 80%, transparent); --tab-sel: var(--ink); --tab-sel-ink: var(--panel);
-  --inst: #0c0d0e; --inst-ink: #f3f1ec; --inst-elev: 0 2px 4px #0003, 0 40px 80px -40px #0008;
+/* ======================================================================================================== RELIEF
+   Soft relief. The whole app is one moulded device: a raised slab in the middle of the page, with every part pressed
+   out of or into the same smooth surface. Panels are wells, controls rise, and anything chosen sinks in. */
+:root[data-style="relief"] {
+  --nm-lt: color-mix(in srgb, #fff 78%, var(--chassis)); --nm-dk: color-mix(in srgb, #2a3a55 26%, var(--chassis));
+  --nm-out: 10px 10px 24px var(--nm-dk), -10px -10px 24px var(--nm-lt); --nm-sm: 5px 5px 12px var(--nm-dk), -5px -5px 12px var(--nm-lt);
+  --nm-in: inset 5px 5px 12px var(--nm-dk), inset -5px -5px 12px var(--nm-lt); --nm-ink: var(--ink);
+  --f-disp: "V Sans", "V Inter", sans-serif; --w-disp: 600; --w-num: 600; --tr-disp: -.035em; --tr-num: -.05em; --h2: clamp(38px, 4.4vw, 62px);
+  --r: 28px; --r-ctl: 16px; --r-chip: 999px; --pad: 24px; --r-inst: 30px; --hw-gap: 22px;
+  --bg: var(--chassis); --sf: var(--chassis); --sf-2: var(--chassis); --stroke: transparent; --elev: var(--nm-in);
+  --ctl: var(--chassis); --ctl-h: var(--chassis); --ctl-stroke: transparent;
+  --pri: var(--teal); --pri-ink: var(--on-teal); --sel: var(--chassis); --sel-ink: var(--teal);
+  --bar: transparent; --bar-stroke: transparent; --tab-sel: var(--chassis); --tab-sel-ink: var(--teal);
+  --inst: var(--glass); --inst-stroke: transparent; --inst-ink: #eef2f8; --inst-elev: inset 6px 6px 16px #000a, inset -2px -2px 8px #ffffff14, 0 0 0 8px var(--chassis), var(--nm-out); --sig: var(--amber);
 }
-:root[data-style="classic"][data-theme="dark"] { --inst: #050506; --elev: none; }
-:root[data-style="classic"] body { background: color-mix(in srgb, var(--chassis) 70%, var(--panel)); }
-:root[data-style="classic"] .btn.primary { box-shadow: 0 1px 0 #ffffff40 inset, 0 8px 18px -8px color-mix(in srgb, var(--pri) 80%, transparent); }
+:root[data-style="relief"][data-theme="dark"] { --nm-lt: color-mix(in srgb, #fff 7%, var(--chassis)); --nm-dk: color-mix(in srgb, #000 55%, var(--chassis)); }
+:root[data-style="relief"] body { background: var(--chassis); }
+:root[data-style="relief"] .card .card, :root[data-style="relief"] .card .sensor { background: var(--chassis); box-shadow: var(--nm-sm); }
+:root[data-style="relief"] :is(.btn, .chip, .list-opt, .station, .chan, .th-card) { box-shadow: var(--nm-sm); transition: box-shadow .2s var(--ease-out, ease), color .2s ease; }
+:root[data-style="relief"] :is(.btn, .chip, .list-opt, .station):active { box-shadow: var(--nm-in); scale: 1; }
+:root[data-style="relief"] .btn.primary { box-shadow: var(--nm-sm), inset 0 1px 0 #ffffff40; }
+:root[data-style="relief"] :is(.btn.on, .btn[aria-pressed="true"], .chip[aria-pressed="true"], .list-opt[aria-pressed="true"], .station[aria-current="true"], .chan.cur) { box-shadow: var(--nm-in); background: var(--chassis); color: var(--teal); }
+:root[data-style="relief"] :is(.seg, .mode-switch) { background: var(--chassis); box-shadow: var(--nm-in); border: 0; padding: 5px; gap: 4px; }
+:root[data-style="relief"] :is(.seg, .mode-switch) button[aria-pressed="true"] { background: var(--chassis); color: var(--teal); box-shadow: var(--nm-sm); }
+:root[data-style="relief"] :is(input[type=text], input[type=number], input[type=search], input[type=password], input[type=email], input[type=url], input[type=time], input[type=date], input[type=datetime-local], select, textarea) { background: var(--chassis); border-color: transparent; box-shadow: var(--nm-in); }
+:root[data-style="relief"] input[type=range]::-webkit-slider-runnable-track { height: 10px; border-radius: 6px; background: var(--chassis); box-shadow: inset 3px 3px 6px var(--nm-dk), inset -3px -3px 6px var(--nm-lt); }
+:root[data-style="relief"] input[type=range]::-moz-range-track { height: 10px; border-radius: 6px; background: var(--chassis); box-shadow: inset 3px 3px 6px var(--nm-dk), inset -3px -3px 6px var(--nm-lt); }
+:root[data-style="relief"] input[type=range]::-webkit-slider-thumb { width: 24px; height: 24px; margin-top: -7px; background: var(--chassis); box-shadow: 4px 4px 9px var(--nm-dk), -4px -4px 9px var(--nm-lt); }
+:root[data-style="relief"] input[type=range]::-moz-range-thumb { width: 24px; height: 24px; background: var(--chassis); box-shadow: 4px 4px 9px var(--nm-dk), -4px -4px 9px var(--nm-lt); }
+:root[data-style="relief"] .switch i { background: var(--chassis); box-shadow: inset 3px 3px 6px var(--nm-dk), inset -3px -3px 6px var(--nm-lt); }
+:root[data-style="relief"] :is(.banner, .cta) { box-shadow: var(--nm-sm); }
+:root[data-style="relief"] .banner.warn { box-shadow: var(--nm-sm), inset 4px 0 0 var(--warn); }
+:root[data-style="relief"] .banner.bad { box-shadow: var(--nm-sm), inset 4px 0 0 var(--bad); }
+:root[data-style="relief"] .ho-dir-i svg { width: 20px; height: 20px; padding: 12px; box-sizing: content-box; border-radius: 50%; background: var(--chassis); box-shadow: var(--nm-sm); color: var(--teal); }
+@media (hover: hover) and (pointer: fine) { :root[data-style="relief"] .ho-dir-i:hover svg { box-shadow: var(--nm-in); } }
+:root[data-style="relief"] :is(.progress, .meter) { background: var(--chassis); box-shadow: inset 2px 2px 5px var(--nm-dk), inset -2px -2px 5px var(--nm-lt); }
+:root[data-style="relief"] :is(.soundbar, .mobile-nav) { --inst-ink: var(--nm-ink); --sb: var(--chassis); }
+:root[data-style="relief"] .mobile-nav { box-shadow: 0 -8px 24px var(--nm-dk); }
 @media (min-width: 761px) {
-  :root[data-style="classic"] .topbar { height: 68px; }
-  :root[data-style="classic"] .tabs { flex: none; margin: 0 auto; background: var(--sf-2); border-radius: 15px; padding: 4px; gap: 2px; }
-  :root[data-style="classic"] .soundbar { left: 24px; right: 24px; bottom: 16px; border-radius: 22px; box-shadow: 0 30px 60px -30px #0009; padding: 10px 12px; }
+  /* the device: one raised slab holding every page */
+  :root[data-style="relief"] main { max-width: 1260px; margin: 18px auto 150px; padding: 44px 48px 52px; border-radius: 52px; background: var(--chassis); box-shadow: 18px 18px 44px var(--nm-dk), -18px -18px 44px var(--nm-lt); }
+  :root[data-style="relief"] .topbar { height: 96px; -webkit-backdrop-filter: none; backdrop-filter: none; background: var(--chassis); }
+  /* the sections: a row of round keys pressed out of the surface; the open one is pressed in and says its name */
+  :root[data-style="relief"] .tabs { gap: 14px; padding: 10px 14px; overflow: visible; }
+  :root[data-style="relief"] .tab { width: auto; height: 48px; min-height: 48px; padding: 0 18px 0 14px; justify-content: center; border-radius: 999px; background: var(--chassis); box-shadow: var(--nm-sm); color: var(--ink-2); flex: none; }
+  :root[data-style="relief"] .tab[aria-selected="true"] { width: auto; padding: 0 18px 0 14px; border-radius: 999px; box-shadow: var(--nm-in); color: var(--teal); }
+  :root[data-style="relief"] .tab-sep { display: none; }
+  :root[data-style="relief"] .soundbar { left: 50%; right: auto; translate: -50% 0; bottom: 22px; width: min(980px, calc(100vw - 48px)); border-radius: 999px; padding: 10px 12px; box-shadow: var(--nm-out); border: 0; }
+  :root[data-style="relief"] .glide { display: none; }
 }
 
-/* ======================================================================================================== LUMEN
-   The pro workspace. A sidebar, dense 14 px type, hairlines and surface steps, off-white actions, violet for selection. */
-:root[data-style="lumen"] {
-  --w-disp: 600; --w-num: 500; --tr-num: -.055em; --h2: clamp(28px, 2.8vw, 38px);
-  --r: 12px; --r-ctl: 8px; --r-chip: 6px; --pad: 18px; --r-inst: 14px; --hw-gap: 10px;
-  --bg: #08070c; --sf: color-mix(in srgb, var(--panel) 70%, #08070c); --sf-2: color-mix(in srgb, #fff 4%, transparent); --stroke: color-mix(in srgb, #fff 8%, transparent);
-  --ctl: color-mix(in srgb, #fff 6%, transparent); --ctl-h: color-mix(in srgb, #fff 10%, transparent); --ctl-stroke: color-mix(in srgb, #fff 8%, transparent);
-  --pri: #f1eefa; --pri-ink: #130e22; --sel: color-mix(in srgb, var(--accent) 26%, transparent); --sel-ink: #fff;
-  --bar: #0c0a12; --bar-stroke: color-mix(in srgb, #fff 7%, transparent); --tab-sel: color-mix(in srgb, #fff 8%, transparent); --tab-sel-ink: #fff;
-  --inst: #0d0b14; --inst-stroke: color-mix(in srgb, #fff 9%, transparent); --inst-ink: #f4f1fb; --sig: #fff; --freq: clamp(96px, 11vw, 160px);
+/* ======================================================================================================== WALNUT
+   The home receiver. Walnut cheeks either side, brushed aluminium modules held by screws, a backlit glass dial with a
+   warm lamp behind it, knurled knobs, and the sections as a row of keys along the bottom under the player. */
+:root[data-style="walnut"] {
+  --f-body: "V Sans", "V Inter", sans-serif; --f-disp: "V Sans", sans-serif; --f-num: "V B612", "V Mono", monospace;
+  --w-disp: 600; --w-num: 400; --tr-disp: .02em; --tr-num: -.02em; --h-case: uppercase; --h2: clamp(30px, 3.4vw, 46px);
+  --r: 10px; --r-ctl: 6px; --r-chip: 6px; --pad: 22px; --r-inst: 10px; --hw-gap: 16px;
+  --metal: linear-gradient(180deg, color-mix(in srgb, #fff 9%, var(--panel)), color-mix(in srgb, #000 6%, var(--panel)));
+  --brush: repeating-linear-gradient(90deg, color-mix(in srgb, #fff 4%, transparent) 0 1px, transparent 1px 2px, color-mix(in srgb, #000 3%, transparent) 2px 3px);
+  --screw: radial-gradient(circle at 40% 35%, #e8e4dc, #8a857d 55%, #4a4640 70%, transparent 72%);
+  --sf: var(--panel); --sf-2: color-mix(in srgb, #000 16%, var(--panel)); --stroke: color-mix(in srgb, #000 45%, transparent);
+  --elev: inset 0 1px 0 color-mix(in srgb, #fff 22%, transparent), inset 0 -1px 0 #0006, 0 2px 0 #0005, 0 18px 30px -16px #000c;
+  --ctl: linear-gradient(180deg, color-mix(in srgb, #fff 14%, var(--panel)), color-mix(in srgb, #000 10%, var(--panel))); --ctl-h: linear-gradient(180deg, color-mix(in srgb, #fff 20%, var(--panel)), var(--panel)); --ctl-stroke: #0009;
+  --pri: linear-gradient(180deg, color-mix(in srgb, #fff 22%, var(--accent)), color-mix(in srgb, #000 12%, var(--accent))); --pri-ink: var(--on-teal); --sel: var(--sf-2); --sel-ink: var(--amber);
+  --bar: transparent; --bar-stroke: transparent; --tab-sel: var(--sf-2); --tab-sel-ink: var(--amber);
+  --inst: radial-gradient(120% 160% at 50% 115%, #5a3410, #1d1208 55%, #0d0805); --inst-stroke: #000; --inst-ink: #ffe9c6;
+  --inst-elev: inset 0 4px 16px #000, inset 0 0 0 1px #ffffff12, 0 0 0 6px color-mix(in srgb, #000 35%, var(--panel)), 0 1px 0 6px #ffffff14; --sig: #ffb347;
+  --wood: repeating-linear-gradient(92deg, #0000 0 7px, #00000024 7px 9px, #0000 9px 23px, #ffffff0d 23px 24px), repeating-linear-gradient(88deg, #3d2413 0 30px, #5c3720 30px 52px, #47291a 52px 90px), #4a2c19;
 }
-:root[data-style="lumen"] body { font-size: 14px; }
-:root[data-style="lumen"] .btn { font-size: 13.5px; min-height: 34px; }
-:root[data-style="lumen"] .freq .sig-dot, :root[data-style="lumen"] .strength i.on { background: var(--accent); }
+:root[data-style="walnut"] body { background: repeating-linear-gradient(0deg, color-mix(in srgb, #000 6%, transparent) 0 1px, transparent 1px 3px), var(--chassis); }
+/* the walnut cheeks either side of the receiver */
+@media (min-width: 1100px) {
+  :root[data-style="walnut"] .app::before, :root[data-style="walnut"] .app::after { content: ""; position: fixed; top: 0; bottom: 0; width: 26px; z-index: 45; pointer-events: none; background: var(--wood);
+    box-shadow: inset -2px 0 0 #ffffff14, inset 2px 0 0 #00000066; }
+  :root[data-style="walnut"] .app::before { left: 0; } :root[data-style="walnut"] .app::after { right: 0; }
+  :root[data-style="walnut"] .app { padding-inline: 26px; }
+}
+/* brushed aluminium modules, a screw in each corner */
+:root[data-style="walnut"] :is(.card, .ho-tile, details.more, .sat-card, .sensor) { background:
+  var(--screw) 8px 8px / 9px 9px no-repeat, var(--screw) calc(100% - 8px) 8px / 9px 9px no-repeat, var(--screw) 8px calc(100% - 8px) / 9px 9px no-repeat, var(--screw) calc(100% - 8px) calc(100% - 8px) / 9px 9px no-repeat,
+  var(--brush), var(--metal); }
+:root[data-style="walnut"] .card .card, :root[data-style="walnut"] .card .sensor { background: var(--sf-2); box-shadow: inset 0 2px 6px #0007; }
+:root[data-style="walnut"] :is(h2, h3) { text-shadow: 0 1px 0 color-mix(in srgb, #fff 18%, transparent), 0 -1px 0 #0006; }
+:root[data-style="walnut"] .ho-tile-h span { text-transform: uppercase; letter-spacing: .08em; font-size: 11.5px; font-weight: 600; }
+:root[data-style="walnut"] .ho-tile-h { padding-inline: 24px; }
+/* keys that travel; a chosen key stays down with its lamp lit */
+:root[data-style="walnut"] :is(.btn, .chip) { background: var(--ctl); border-bottom-width: 3px; box-shadow: inset 0 1px 0 #ffffff2a; transition: translate .07s ease, border-bottom-width .07s ease; }
+:root[data-style="walnut"] :is(.btn, .chip):active { translate: 0 2px; border-bottom-width: 1px; scale: 1; }
+:root[data-style="walnut"] .btn.primary { background: var(--pri); border: 1px solid #0009; border-bottom-width: 3px; }
+:root[data-style="walnut"] :is(.chip, .btn)[aria-pressed="true"], :root[data-style="walnut"] .btn.on { background: var(--sf-2); color: color-mix(in oklab, var(--amber) 45%, var(--ink)); box-shadow: inset 0 2px 6px #000c; border-bottom-width: 1px; translate: 0 2px; }
+:root[data-style="walnut"] :is(.chip, .btn, .seg button, .mode-switch button)[aria-pressed="true"]::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--amber); box-shadow: 0 0 8px var(--amber); flex: none; }
+:root[data-style="walnut"] :is(.seg, .mode-switch) { background: #0008; box-shadow: inset 0 2px 5px #000; border-color: #000; }
+:root[data-style="walnut"] :is(.seg, .mode-switch) button { background: var(--ctl); color: var(--ink); gap: 6px; }
+:root[data-style="walnut"] :is(.seg, .mode-switch) button[aria-pressed="true"] { background: var(--sf-2); color: color-mix(in oklab, var(--amber) 45%, var(--ink)); }
+/* a fader cap on a slot */
+:root[data-style="walnut"] input[type=range]::-webkit-slider-runnable-track { height: 6px; border-radius: 3px; background: #000a; box-shadow: inset 0 1px 2px #000, 0 1px 0 #ffffff1a; }
+:root[data-style="walnut"] input[type=range]::-webkit-slider-thumb { width: 14px; height: 26px; margin-top: -10px; border-radius: 3px; background: repeating-linear-gradient(0deg, #0003 0 1px, transparent 1px 3px), linear-gradient(90deg, #8d8a84, #f2efe8 45%, #a29e96); box-shadow: 0 2px 4px #000a; }
+:root[data-style="walnut"] input[type=range]::-moz-range-thumb { width: 14px; height: 26px; border-radius: 3px; background: linear-gradient(90deg, #8d8a84, #f2efe8 45%, #a29e96); box-shadow: 0 2px 4px #000a; }
+/* knurled knobs for the Home shortcuts */
+:root[data-style="walnut"] .ho-dir-i svg { width: 20px; height: 20px; padding: 12px; box-sizing: content-box; border-radius: 50%; color: #2a2620;
+  background: radial-gradient(circle at 50% 50%, #e9e6df 0 46%, transparent 47%), repeating-conic-gradient(#d6d2ca 0 5deg, #8e8a82 5deg 10deg); box-shadow: 0 2px 4px #000a, inset 0 0 0 1px #0006; }
+/* the lamp-lit readouts */
+:root[data-style="walnut"] .freq { text-shadow: 0 0 22px color-mix(in srgb, var(--sig) 55%, transparent); }
+:root[data-style="walnut"] .ho-title { color: var(--sig); text-shadow: 0 0 24px color-mix(in srgb, var(--sig) 45%, transparent); }
+:root[data-style="walnut"] .soundbar { --sb: linear-gradient(180deg, #2a2723, #151310); }
+:root[data-style="walnut"] .soundbar .meter { height: 12px; border-radius: 2px; background: #0b0a08; box-shadow: inset 0 1px 3px #000; }
+:root[data-style="walnut"] .soundbar .meter i { background: linear-gradient(90deg, #6fcf5a 0 60%, #f2c94c 60% 82%, #e8402a 82%); }
 @media (min-width: 761px) {
-  :root[data-style="lumen"] .topbar { position: fixed; inset: 0 auto 0 0; width: 236px; height: auto; flex-direction: column; align-items: stretch; padding: 18px 12px; gap: 14px; border-bottom: 0; border-right: 1px solid var(--bar-stroke); overflow-y: auto; }
-  :root[data-style="lumen"] .tabs { flex-direction: column; flex: 1; gap: 1px; overflow: visible; }
-  :root[data-style="lumen"] .tab { justify-content: flex-start; min-height: 32px; padding: 0 10px; font-size: 13.5px; }
-  :root[data-style="lumen"] .tab .t { display: inline !important; }
-  :root[data-style="lumen"] .tab svg { width: 17px; height: 17px; }
-  :root[data-style="lumen"] .tab-sep { width: auto; height: 1px; margin: 8px 6px; }
-  :root[data-style="lumen"] .top-right { flex-direction: column; align-items: stretch; }
-  :root[data-style="lumen"] main { margin-left: 236px; width: auto; max-width: none; padding-inline: 40px; }
-  :root[data-style="lumen"] .soundbar { left: 236px; }
-  :root[data-style="lumen"] .glide { display: none; }
+  :root[data-style="walnut"] .topbar { height: 74px; -webkit-backdrop-filter: none; backdrop-filter: none; background: var(--brush), var(--metal); border-bottom: 1px solid #000a; box-shadow: inset 0 -1px 0 #ffffff14, 0 6px 16px -10px #000c; }
+  :root[data-style="walnut"] .brand { padding: 6px 14px; border-radius: 4px; background: linear-gradient(180deg, #1d1a16, #0c0b09); color: #e9dcc4; box-shadow: inset 0 1px 2px #000, 0 1px 0 #ffffff1f; }
+  :root[data-style="walnut"] .brand span { display: inline !important; text-transform: uppercase; letter-spacing: .14em; font-size: 13px; }
+  /* the sections: a full-width row of keys at the bottom of the receiver, the player sits just above it */
+  :root[data-style="walnut"] .topbar > .tabs { position: fixed; z-index: 44; left: 0; right: 0; bottom: 0; justify-content: center; gap: 4px; padding: 8px 40px 10px; height: 66px; margin: 0;
+    background: var(--brush), linear-gradient(180deg, color-mix(in srgb, #fff 6%, var(--panel)), color-mix(in srgb, #000 18%, var(--panel))); border-top: 1px solid #000; box-shadow: inset 0 1px 0 #ffffff1c; overflow-x: auto; }
+  :root[data-style="walnut"] .tab { flex-direction: column; gap: 2px; min-width: 70px; height: 46px; min-height: 46px; padding: 4px 10px; border-radius: 4px; font-size: 11px; text-transform: uppercase; letter-spacing: .06em;
+    background: linear-gradient(180deg, color-mix(in srgb, #fff 16%, var(--panel)), color-mix(in srgb, #000 12%, var(--panel))); color: var(--ink); border: 1px solid #000a; border-bottom-width: 4px; box-shadow: inset 0 1px 0 #ffffff2e; }
+  :root[data-style="walnut"] .tab .t { display: block !important; }
+  :root[data-style="walnut"] .tab svg { width: 16px; height: 16px; margin: 0; }
+  :root[data-style="walnut"] .tab[aria-selected="true"] { translate: 0 3px; border-bottom-width: 1px; background: var(--sf-2); color: var(--amber); box-shadow: inset 0 2px 6px #000c; }
+  :root[data-style="walnut"] .tab[aria-selected="true"] svg { filter: drop-shadow(0 0 6px var(--amber)); }
+  :root[data-style="walnut"] .tab-sep { width: 1px; height: 36px; margin: 0 8px; background: #0009; box-shadow: 1px 0 0 #ffffff14; }
+  :root[data-style="walnut"] .soundbar { left: 0; right: 0; bottom: 66px; border-radius: 0; border-top: 1px solid #000; box-shadow: inset 0 1px 0 #ffffff12; padding: 8px 40px; }
+  :root[data-style="walnut"] main { padding-bottom: 200px; }
+  :root[data-style="walnut"] .glide { display: none; }
+}
+@media (min-width: 1100px) { :root[data-style="walnut"] :is(.topbar > .tabs, .soundbar) { left: 26px; right: 26px; } }
+
+/* ======================================================================================================== RIOT
+   More is more. Cream paper under polka dots and stripes, three loud colours at once, giant italic serifs next to fat
+   grotesques, sections as a cloud of stickers, and Home as a collage of tilted cards with stacked coloured shadows. */
+:root[data-style="riot"] {
+  --c1: var(--accent); --c2: var(--amber); --c3: var(--hot-c, var(--amber));
+  --f-body: "V Bricolage", system-ui, sans-serif; --f-disp: "V Serif", Georgia, serif; --f-num: "V Bricolage", sans-serif;
+  --w-disp: 400; --w-num: 800; --tr-disp: -.02em; --tr-num: -.06em; --h2: clamp(64px, 9vw, 148px); --h-hero: clamp(64px, 9vw, 150px);
+  --r: 18px; --r-ctl: 12px; --r-chip: 12px; --pad: 24px; --r-inst: 22px; --sw: 3px; --hw-gap: 22px;
+  --sf: var(--panel); --sf-2: color-mix(in srgb, var(--c2) 14%, var(--panel)); --stroke: var(--ink);
+  --elev: 6px 6px 0 var(--c1), 12px 12px 0 var(--c3);
+  --ctl: var(--panel); --ctl-h: color-mix(in srgb, var(--c2) 30%, var(--panel)); --ctl-stroke: var(--ink);
+  --pri: var(--c1); --pri-ink: var(--on-teal); --sel: var(--ink); --sel-ink: var(--panel);
+  --bar: transparent; --bar-stroke: transparent; --tab-sel: var(--ink); --tab-sel-ink: var(--panel);
+  --inst: radial-gradient(circle, color-mix(in srgb, var(--c3) 22%, transparent) 1.5px, transparent 2px) 0 0 / 18px 18px, color-mix(in srgb, #000 30%, var(--glass));
+  --inst-stroke: var(--ink); --inst-ink: #fff6e6; --inst-elev: 8px 8px 0 var(--c2), 16px 16px 0 var(--c1); --sig: var(--c2);
+  --stripes: repeating-linear-gradient(-45deg, var(--c1) 0 10px, var(--c2) 10px 20px, var(--c3) 20px 30px); --riot-ink: var(--ink);
+}
+:root[data-style="riot"] body { background:
+  radial-gradient(circle, color-mix(in srgb, var(--c3) 16%, transparent) 2px, transparent 2.5px) 0 0 / 26px 26px,
+  repeating-linear-gradient(45deg, color-mix(in srgb, var(--c1) 5%, transparent) 0 14px, transparent 14px 28px), var(--chassis); }
+:root[data-style="riot"] h2 { font-style: italic; line-height: .9; text-shadow: 3px 3px 0 var(--c2), 6px 6px 0 color-mix(in srgb, var(--c1) 70%, transparent); }
+:root[data-style="riot"] h3 { font-family: var(--f-body); font-weight: 800; font-size: 19px; letter-spacing: -.02em; }
+/* a striped band under every page title */
+:root[data-style="riot"] .page-head::after { content: ""; display: block; width: min(420px, 70%); height: 14px; border: 3px solid var(--ink); border-radius: 8px; background: var(--stripes); }
+:root[data-style="riot"] :is(.card, .ho-tile, details.more, .sat-card, .sensor) { background: var(--stripes) top / 100% 10px no-repeat, var(--panel); padding-top: calc(var(--pad) + 8px); }
+:root[data-style="riot"] .card .card, :root[data-style="riot"] .card .sensor { border: 2px solid var(--ink); box-shadow: 4px 4px 0 var(--c2); background: var(--panel); padding-top: var(--pad); }
+/* labels are stickers */
+:root[data-style="riot"] .ho-tile .ho-tile-h span { flex: 0 1 auto; padding: 3px 10px; border: 2px solid var(--ink); border-radius: 8px; background: var(--c2); color: #1b1203; font-weight: 800; rotate: -2deg; }
+:root[data-style="riot"] .ho-tile-h { justify-content: space-between; }
+:root[data-style="riot"] .ho-tiles .ho-tile:nth-child(3n+2) .ho-tile-h span { background: var(--c3); color: #001b1a; rotate: 1.5deg; }
+:root[data-style="riot"] .ho-tiles .ho-tile:nth-child(3n) .ho-tile-h span { background: var(--c1); color: var(--on-teal); rotate: -1deg; }
+:root[data-style="riot"] .ho-tile:nth-child(3n+2) { box-shadow: 6px 6px 0 var(--c3), 12px 12px 0 var(--c2); }
+:root[data-style="riot"] .ho-tile:nth-child(3n) { box-shadow: 6px 6px 0 var(--c2), 12px 12px 0 var(--c1); }
+:root[data-style="riot"] .ho-title { font-family: var(--f-disp); font-style: italic; font-weight: 400; }
+@media (max-width: 760px) { :root[data-style="riot"] :is(h2, .ho-title) { text-shadow: 2px 2px 0 var(--c2); } }
+:root[data-style="riot"] :is(.btn, .chip) { font-weight: 700; box-shadow: 3px 3px 0 var(--ink); }
+:root[data-style="riot"] :is(.btn, .chip):active { translate: 2px 2px; box-shadow: 1px 1px 0 var(--ink); scale: 1; }
+:root[data-style="riot"] .btn.primary { border: var(--sw) solid var(--ink); box-shadow: 4px 4px 0 var(--c2); }
+:root[data-style="riot"] :is(.chip, .list-opt):nth-child(3n+1):not([aria-pressed="true"]) { background: color-mix(in srgb, var(--c1) 14%, var(--panel)); }
+:root[data-style="riot"] :is(.chip, .list-opt):nth-child(3n+2):not([aria-pressed="true"]) { background: color-mix(in srgb, var(--c2) 26%, var(--panel)); }
+:root[data-style="riot"] :is(.chip, .list-opt):nth-child(3n):not([aria-pressed="true"]) { background: color-mix(in srgb, var(--c3) 18%, var(--panel)); }
+:root[data-style="riot"] :is(.glass, .now-box, .scope) { --sig-ink: #1b1203; }
+:root[data-style="riot"] :is(.glass, .now-box, .scope) .btn { box-shadow: 3px 3px 0 var(--c2); }
+:root[data-style="riot"] .ho-dir-i svg { width: 20px; height: 20px; padding: 10px; box-sizing: content-box; border: 2px solid var(--ink); border-radius: 12px; background: var(--c2); color: #1b1203; rotate: -4deg; }
+:root[data-style="riot"] .ho-dir-i:nth-child(3n+2) svg { background: var(--c3); color: #001b1a; rotate: 3deg; }
+:root[data-style="riot"] .ho-dir-i:nth-child(3n) svg { background: var(--c1); color: var(--on-teal); rotate: -2deg; }
+:root[data-style="riot"] .soundbar { --sb: var(--riot-ink); border-top: 0; }
+:root[data-style="riot"] .soundbar::after { content: ""; position: absolute; left: 0; right: 0; top: -8px; height: 8px; background: var(--stripes); border-top: 2px solid var(--ink); }
+@media (min-width: 761px) {
+  /* the masthead: logo and controls on one line, then the sections as a cloud of stickers across the page */
+  :root[data-style="riot"] .topbar { display: flex; flex-wrap: wrap; height: auto; padding: 18px 28px 10px; gap: 12px 16px; -webkit-backdrop-filter: none; backdrop-filter: none; position: relative; }
+  :root[data-style="riot"] .topbar > .brand { order: 1; font-family: var(--f-disp); font-style: italic; font-size: 30px; }
+  :root[data-style="riot"] .topbar > .brand span { display: inline !important; }
+  :root[data-style="riot"] .topbar > .top-right { order: 2; margin-left: auto; }
+  :root[data-style="riot"] .topbar > .m-title { display: none; }
+  :root[data-style="riot"] .topbar > .tabs { order: 3; flex: 1 0 100%; flex-wrap: wrap; justify-content: center; gap: 12px 10px; padding: 14px 0 6px; overflow: visible; }
+  :root[data-style="riot"] .tab { border: 3px solid var(--ink); border-radius: 12px; font-weight: 800; color: var(--ink); background: var(--panel); box-shadow: 3px 3px 0 var(--ink); rotate: -1.5deg; }
+  :root[data-style="riot"] .tab:nth-child(4n+2) { background: color-mix(in srgb, var(--c2) 40%, var(--panel)); rotate: 1.5deg; }
+  :root[data-style="riot"] .tab:nth-child(4n+3) { background: color-mix(in srgb, var(--c3) 26%, var(--panel)); rotate: -.5deg; }
+  :root[data-style="riot"] .tab:nth-child(4n) { background: color-mix(in srgb, var(--c1) 20%, var(--panel)); rotate: 2deg; }
+  :root[data-style="riot"] .tab .t { display: inline !important; }
+  :root[data-style="riot"] .tab[aria-selected="true"] { background: var(--ink); color: var(--panel); rotate: 0deg; scale: 1.08; box-shadow: 4px 4px 0 var(--c1), 8px 8px 0 var(--c2); }
+  :root[data-style="riot"] .tab-sep { display: none; }
+  :root[data-style="riot"] .soundbar { left: 0; right: 0; bottom: 0; border-radius: 0; padding: 10px 28px; }
+  :root[data-style="riot"] main { padding-bottom: 140px; }
+  :root[data-style="riot"] .glide { display: none; }
+}
+/* Home is a collage: cards of different sizes, each tilted its own way */
+@media (min-width: 1000px) {
+  :root[data-style="riot"] .ho-tiles { grid-template-columns: repeat(6, minmax(0, 1fr)); grid-auto-flow: dense; gap: 26px; }
+  :root[data-style="riot"] .ho-tiles > .ho-tile { grid-column: span 2; }
+  :root[data-style="riot"] .ho-tiles > .ho-tile:nth-child(5n+1) { grid-column: span 3; grid-row: span 2; }
+  :root[data-style="riot"] .ho-tiles > .ho-tile:nth-child(5n+2) { grid-column: span 3; }
+  :root[data-style="riot"] .ho-tiles > .ho-tile:nth-child(4n+1) { rotate: -1deg; }
+  :root[data-style="riot"] .ho-tiles > .ho-tile:nth-child(4n+2) { rotate: .8deg; }
+  :root[data-style="riot"] .ho-tiles > .ho-tile:nth-child(4n+3) { rotate: -.5deg; }
+  :root[data-style="riot"] .ho-tiles > .ho-tile:nth-child(4n) { rotate: 1.2deg; }
+  :root[data-style="riot"] .ho-title { font-size: clamp(72px, 8vw, 132px); }
 }
 
 /* ======================================================================================================== BENTO
@@ -365,7 +552,7 @@
 :root[data-style="folio"] .tabs { counter-reset: idx; }
 :root[data-style="folio"] .tab::before { counter-increment: idx; content: counter(idx, decimal-leading-zero); font-family: var(--f-code); font-size: 10.5px; color: var(--ink-3, var(--ink-2)); margin-right: 2px; align-self: flex-start; padding-top: 4px; }
 :root[data-style="folio"] .tab[aria-selected="true"] { box-shadow: inset 0 -2px 0 var(--accent); }
-:root[data-style="folio"] .tab svg { display: none; }
+:root[data-style="folio"] .tab svg { width: 15px; height: 15px; margin-right: 6px; }
 :root[data-style="folio"] .tab .t { display: inline !important; }
 :root[data-style="folio"] .hm-hero { border-bottom: 1px solid var(--ink); padding-bottom: 28px; }
 :root[data-style="folio"] .hm-sec { font-family: var(--f-disp); font-size: 34px; font-weight: 400; color: var(--ink); }
@@ -404,7 +591,7 @@
 :root[data-style="terminal"] .tabs { counter-reset: win; }
 :root[data-style="terminal"] .tab::before { counter-increment: win; content: counter(win) ":"; color: var(--ink-3); }
 :root[data-style="terminal"] .tab[aria-selected="true"]::before { color: #000; }
-:root[data-style="terminal"] .tab svg { display: none; }
+:root[data-style="terminal"] .tab svg { width: 14px; height: 14px; margin-right: 6px; }
 :root[data-style="terminal"] .tab .t { display: inline !important; }
 :root[data-style="terminal"] .freq .dp { margin: 0 -.2em; }
 :root[data-style="terminal"] .toast { background: #000; color: var(--accent); border: 1px solid var(--accent); }
@@ -445,7 +632,7 @@
   :root[data-style="brut"] .brand { padding: 0 20px; align-self: stretch; border-right: 3px solid var(--ink); font-size: 22px; text-transform: uppercase; }
   :root[data-style="brut"] .tabs { align-self: stretch; gap: 0; flex-wrap: wrap; }
   :root[data-style="brut"] .tab { min-height: 32px; height: auto; padding: 0 14px; border-right: 3px solid var(--ink); }
-  :root[data-style="brut"] .tab svg { display: none; }
+  :root[data-style="brut"] .tab svg { width: 16px; height: 16px; margin-right: 6px; }
   :root[data-style="brut"] .tab .t { display: inline !important; }
   :root[data-style="brut"] .tab-sep { display: none; }
   :root[data-style="brut"] .top-right { align-self: stretch; border-left: 3px solid var(--ink); padding: 0 12px; }
@@ -470,47 +657,12 @@
 :root[data-style="ticket"] .hw:is([data-id="now"], [data-id="signal"]) .hw-big { color: var(--amber); }
 @media (min-width: 761px) { :root[data-style="ticket"] .soundbar { left: 24px; right: 24px; bottom: 14px; border-radius: 14px; } }
 
-/* ======================================================================================================== CONSOLE
-   The hi-fi faceplate. Brushed panels, keys that travel, a recessed lit display, indicator LEDs on pressed keys. */
-:root[data-style="console"] {
-  --f-num: "V B612", "V Mono", monospace; --w-disp: 600; --w-num: 700; --tr-num: -.02em; --h2: clamp(32px, 3.4vw, 48px);
-  --r: 10px; --r-ctl: 7px; --r-chip: 6px; --pad: 20px; --r-inst: 8px;
-  --sf: linear-gradient(180deg, color-mix(in srgb, #fff 6%, var(--panel)), var(--panel) 60%); --sf-2: color-mix(in srgb, #000 30%, var(--panel)); --stroke: color-mix(in srgb, #000 60%, transparent);
-  --elev: inset 0 1px 0 color-mix(in srgb, #fff 9%, transparent), 0 1px 0 #000a, 0 12px 24px -12px #000c;
-  --ctl: linear-gradient(180deg, color-mix(in srgb, #fff 12%, var(--panel)), color-mix(in srgb, #000 10%, var(--panel))); --ctl-h: linear-gradient(180deg, color-mix(in srgb, #fff 17%, var(--panel)), var(--panel)); --ctl-stroke: #000;
-  --pri: linear-gradient(180deg, color-mix(in srgb, #fff 18%, var(--accent)), var(--accent)); --pri-ink: #1a0600; --sel: var(--sf-2); --sel-ink: var(--accent);
-  --bar: linear-gradient(180deg, color-mix(in srgb, #fff 5%, var(--panel)), var(--panel)); --bar-stroke: #000; --tab-sel: var(--sf-2); --tab-sel-ink: var(--accent);
-  --inst: radial-gradient(120% 120% at 50% 0%, color-mix(in srgb, var(--accent) 8%, #070505), #050404); --inst-stroke: #000; --inst-ink: #f2e8e2;
-  --inst-elev: inset 0 3px 14px #000, inset 0 0 0 1px #ffffff0d, 0 1px 0 #ffffff14; --sig: var(--led, #ff8a3d);
-}
-:root[data-style="console"] :is(.card, .hw, details.more) { background: var(--sf); }
-:root[data-style="console"] .btn, :root[data-style="console"] .chip { background: var(--ctl); border-bottom-width: 3px; box-shadow: inset 0 1px 0 #ffffff1f; transition: translate .08s ease, border-bottom-width .08s ease; }
-:root[data-style="console"] .btn:active, :root[data-style="console"] .chip:active { translate: 0 2px; border-bottom-width: 1px; scale: 1; }
-:root[data-style="console"] .btn.primary { background: var(--pri); }
-:root[data-style="console"] :is(.chip, .btn)[aria-pressed="true"], :root[data-style="console"] .btn.on { background: var(--sf-2); box-shadow: inset 0 2px 6px #000c; }
-:root[data-style="console"] :is(.chip, .btn, .seg button, .mode-switch button)[aria-pressed="true"]::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px var(--accent); flex: none; }
-:root[data-style="console"] .freq { text-shadow: 0 0 24px color-mix(in srgb, var(--sig) 45%, transparent); }
-:root[data-style="console"] .freq .dp { margin: 0 -.2em; }
-:root[data-style="console"] .hw:is([data-id="now"], [data-id="signal"]) { background: var(--inst); box-shadow: var(--inst-elev); --ink: #f2e8e2; color: #f2e8e2; }
-:root[data-style="console"] .hw:is([data-id="now"], [data-id="signal"]) .hw-big { color: var(--sig); font-family: var(--f-num); text-shadow: 0 0 20px color-mix(in srgb, var(--sig) 40%, transparent); }
-:root[data-style="console"] #hm-actions .tile svg { border-radius: 50%; background: var(--ctl); box-shadow: inset 0 1px 0 #ffffff26, 0 2px 4px #000a; color: var(--accent); }
-@media (min-width: 761px) { :root[data-style="console"] .soundbar { border-top: 1px solid #000; box-shadow: inset 0 1px 0 #ffffff12; --sb: linear-gradient(180deg, color-mix(in srgb, #fff 6%, var(--panel)), var(--panel)); } }
-
 /* which styles use the rack layout for Radio */
-:root:is([data-style="classic"], [data-style="lumen"], [data-style="terminal"], [data-style="console"], [data-style="ticket"], [data-style="brut"], [data-style="bento"]) { --layout: rack; }
+:root:is([data-style="terminal"], [data-style="ticket"], [data-style="brut"], [data-style="bento"], [data-style="walnut"], [data-style="relief"]) { --layout: rack; }
 
 /* ---------------------------------------------------------------- layout details shared by every style */
 /* centred heroes stack, so the text block must not keep its row width as height */
-:root[data-style] .hm-hero[style], :root:is([data-style="skywave"], [data-style="aurora"]) .hm-hero-main { flex: none; width: 100%; }
-/* a fixed dock inside a blurred bar would be pinned to the bar, not the window */
-:root[data-style="aurora"] .topbar { -webkit-backdrop-filter: none; backdrop-filter: none; }
-/* capsule navs: icons only, the open page also shows its name, so the bar never runs off the edge */
-@media (min-width: 761px) {
-  :root:is([data-style="skywave"], [data-style="classic"], [data-style="bento"]) .tab:not([aria-selected="true"]) .t { display: none !important; }
-  :root:is([data-style="skywave"], [data-style="classic"], [data-style="bento"]) .tab:not([aria-selected="true"]) { padding: 0 11px; }
-  :root:is([data-style="skywave"], [data-style="classic"], [data-style="bento"]) .tab[aria-selected="true"] .t { display: inline !important; }
-}
-:root[data-style="console"] :is(.chip, .btn)[aria-pressed="true"], :root[data-style="console"] .btn.on { color: var(--accent); }
+:root[data-style] .hm-hero[style], :root:is([data-style="skywave"], [data-style="depth"]) .hm-hero-main { flex: none; width: 100%; }
 :root[data-style="brut"] .sx-marquee { margin: 0 0 24px; border: 3px solid var(--ink); }
 :root[data-style] :is(.list-opt, .station, .chan)[aria-pressed="true"] :is(span, small, .muted, .small) { color: inherit; opacity: .78; }
 @media (min-width: 761px) { :root[data-style="folio"] .brand span { display: inline !important; } :root[data-style="folio"] .brand { min-width: 0; } }
@@ -521,7 +673,6 @@
 :root[data-style] .page-head { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; margin-bottom: 28px; }
 :root[data-style] .page-head.row { flex-direction: row; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; }
 :root[data-style] .page-head > p, :root[data-style] .page-head > div > p { margin: 0; max-width: 62ch; font-size: 16.5px; line-height: 1.5; color: var(--ink-2); }
-:root[data-style="aurora"] .page-head { align-items: center; }
 :root[data-style="brut"] .page:not(#p-home) .page-head h2 { font-size: clamp(72px, 10vw, 150px); }
 
 /* Notices: a quiet panel with a coloured edge, the first line is the headline */
@@ -576,11 +727,9 @@
 /* Maps: the map is an instrument window, its controls are this style's controls */
 :root[data-style] .map { border-radius: var(--r-inst, var(--r)); border: var(--sw) solid var(--inst-stroke, var(--stroke)); }
 :root[data-style] .map .zoom .btn { background: var(--sf); color: var(--ink); border: 1px solid var(--stroke); box-shadow: 0 6px 16px -8px #0007; -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); }
-:root[data-style="skywave"] .map .zoom .btn, :root[data-style="lumen"] .map .zoom .btn { background: color-mix(in srgb, var(--glass) 70%, transparent); color: #fff; }
+:root[data-style="skywave"] .map .zoom .btn, :root[data-style="depth"] .map .zoom .btn { background: color-mix(in srgb, var(--glass) 70%, transparent); color: #fff; }
 :root[data-style] .map .attrib { border-radius: 4px; background: color-mix(in srgb, #000 55%, transparent); }
 
-/* Aurora: the bar's right-hand controls sit at the right */
-:root[data-style="aurora"] .top-right { margin-left: auto; }
 /* Brut: the ticker band belongs to the desktop poster */
 @media (max-width: 760px) { :root[data-style="brut"] .sx-marquee { display: none; } }
 /* Phone navigation labels stay readable */
@@ -597,8 +746,8 @@
 /* Home hero: title and actions side by side on wide screens, stacked on phones; centred styles always stack */
 :root[data-style] .page-head.hm-hero { flex-direction: row; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; }
 :root[data-style] .hm-hero .hm-hero-main { flex: 1 1 auto; min-width: min(100%, 420px); }
-:root:is([data-style="skywave"], [data-style="aurora"]) .page-head.hm-hero { flex-direction: column; align-items: center; }
-:root:is([data-style="skywave"], [data-style="aurora"]) .hm-hero .hm-hero-main { flex: none; width: 100%; }
+:root:is([data-style="skywave"], [data-style="depth"]) .page-head.hm-hero { flex-direction: column; align-items: center; }
+:root:is([data-style="skywave"], [data-style="depth"]) .hm-hero .hm-hero-main { flex: none; width: 100%; }
 @media (max-width: 760px) { :root[data-style] .page-head.hm-hero { flex-direction: column; align-items: stretch; } :root[data-style] .hm-hero .hm-hero-main { flex: none; min-width: 0; } }
 /* widgets: the label sits at the top, whatever there is to say sits at the bottom, actions after it */
 :root[data-style] .hw-empty { margin-top: auto; color: var(--ink-2); font-size: 15px; line-height: 1.45; text-align: left; padding: 0; border: 0; }
@@ -609,7 +758,6 @@
 :root[data-style] .hw-add { min-height: 120px; }
 :root[data-style="bento"] .banner { border-radius: 20px; box-shadow: none; }
 :root[data-style="bento"] .banner.warn, :root[data-style="bento"] .banner.bad { border-width: 2px; }
-:root[data-style="aurora"] .banner { box-shadow: none; }
 
 :root[data-style] a.btn:not(.primary) { color: var(--ctl-ink); text-decoration: none; }
 :root[data-style] a.btn.primary { color: var(--pri-ink); text-decoration: none; }
@@ -686,36 +834,28 @@
 :root[data-style="folio"] :is(.glass, .now-box, .scope), :root[data-style="brut"] :is(.glass, .now-box, .scope) { --pri: var(--inst-ink); --pri-ink: var(--inst); }
 :root[data-style] #sb-cc.dim { opacity: 1; color: color-mix(in srgb, var(--inst-ink) 82%, transparent); }
 :root[data-style] .toast.bad { background: color-mix(in srgb, var(--bad) 20%, var(--chassis)); color: var(--ink); box-shadow: inset 4px 0 0 var(--bad), 0 12px 30px -16px #0008; }
-/* Aurora: text on the accent uses the palette's own readable colour; the dock is a dark bar, so it carries light ink */
-:root[data-style="aurora"] { --pri-ink: var(--on-teal, #140e02); --sel-ink: var(--on-teal, #140e02); }
 @media (min-width: 761px) {
-  :root[data-style="aurora"] .tabs { --ink: var(--inst-ink); --ink-2: color-mix(in srgb, var(--inst-ink) 76%, transparent); --ctl: color-mix(in srgb, var(--inst-ink) 10%, transparent);
-    --tab-sel-ink: color-mix(in srgb, var(--accent) 45%, #fff); background: color-mix(in srgb, var(--glass) 92%, transparent); }
   /* Skywave: the frosted bars are solid enough that their white labels read over a pale colour field too */
   :root[data-style="skywave"] .tabs { background: color-mix(in srgb, var(--glass) 70%, transparent); }
 }
 :root[data-style="skywave"] .soundbar { --sb: color-mix(in srgb, var(--glass) 82%, transparent); }
 :root[data-style] .soundbar .now span { color: color-mix(in srgb, var(--inst-ink) 80%, transparent); }
-/* Console's instrument colour is a gradient: give it back after the shared rule clears background images */
-:root[data-style="console"] :is(.glass, .now-box, .scope) { background: var(--inst); }
+/* Walnut's instrument colour is a gradient: give it back after the shared rule clears background images */
+:root[data-style="walnut"] :is(.glass, .now-box, .scope) { background: var(--inst); }
 
 /* The tab bar sits in the true centre of the screen: logo on the left and controls on the right each take an equal
-   share of what is left, so a wider control group no longer pulls the tabs off to one side. (Lumen has a sidebar,
-   Aurora a dock and Folio a masthead: their own layouts.) */
+   share of what is left, so a wider control group no longer pulls the tabs off to one side. (Depth has a floating
+   column at the side, Folio a masthead and Riot a sticker cloud under the logo: their own layouts.) */
 @media (min-width: 761px) {
-  :root[data-style]:not([data-style="lumen"]):not([data-style="aurora"]):not([data-style="folio"]) .topbar {
+  :root[data-style]:not([data-style="depth"]):not([data-style="folio"]):not([data-style="riot"]) .topbar {
     display: grid; grid-template-columns: minmax(max-content, 1fr) minmax(0, auto) minmax(max-content, 1fr); align-items: center; column-gap: 16px; }
-  :root[data-style]:not([data-style="lumen"]):not([data-style="aurora"]):not([data-style="folio"]) .topbar > .brand { grid-column: 1; justify-self: start; }
-  :root[data-style]:not([data-style="lumen"]):not([data-style="aurora"]):not([data-style="folio"]) .topbar > .tabs { grid-column: 2; justify-self: center; min-width: 0; max-width: 100%; margin: 0; }
-  :root[data-style]:not([data-style="lumen"]):not([data-style="aurora"]):not([data-style="folio"]) .topbar > .top-right { grid-column: 3; justify-self: end; margin-left: 0; }
-  :root[data-style]:not([data-style="lumen"]):not([data-style="aurora"]):not([data-style="folio"]) .topbar > .m-title { display: none; }
-  /* Lumen: pages are centred in the space beside the sidebar */
-  :root[data-style="lumen"] main > .page { margin-inline: auto; }
+  :root[data-style]:not([data-style="depth"]):not([data-style="folio"]):not([data-style="riot"]) .topbar > .brand { grid-column: 1; justify-self: start; }
+  :root[data-style]:not([data-style="depth"]):not([data-style="folio"]):not([data-style="riot"]) .topbar > .tabs { grid-column: 2; justify-self: center; min-width: 0; max-width: 100%; margin: 0; }
+  :root[data-style]:not([data-style="depth"]):not([data-style="folio"]):not([data-style="riot"]) .topbar > .top-right { grid-column: 3; justify-self: end; margin-left: 0; }
+  :root[data-style]:not([data-style="depth"]):not([data-style="folio"]):not([data-style="riot"]) .topbar > .m-title { display: none; }
 }
 @media (min-width: 761px) {
-  :root[data-style="lumen"] main { width: auto; max-width: none; margin: 0 0 0 236px; }
-  :root[data-style="lumen"] main > .page { max-width: 1100px; margin-inline: auto; }
   /* both sides of the top bar as wide as the wider of the two (set by themes.js), so the middle is the true centre */
-  :root[data-style]:not([data-style="lumen"]):not([data-style="aurora"]):not([data-style="folio"]) .topbar {
+  :root[data-style]:not([data-style="depth"]):not([data-style="folio"]):not([data-style="riot"]) .topbar {
     grid-template-columns: minmax(var(--top-side, max-content), 1fr) minmax(0, auto) minmax(var(--top-side, max-content), 1fr); }
 }

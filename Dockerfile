@@ -11,7 +11,7 @@ RUN set -eux; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
         python3 python3-numpy python3-scipy python3-pip python3-sgp4 python3-pil python3-reportlab \
-        rtl-433 multimon-ng openssl libusb-1.0-0 libpng16-16 libsndfile1 ffmpeg ca-certificates tzdata \
+        rtl-433 multimon-ng libusb-1.0-0 libpng16-16 libsndfile1 ffmpeg ca-certificates tzdata \
         build-essential cmake pkg-config git libusb-1.0-0-dev libpng-dev; \
     pip3 install --no-cache-dir --break-system-packages aprslib; \
     pip3 install --no-cache-dir --break-system-packages faster-whisper || echo 'optional caption engine not installed'; \
@@ -42,6 +42,6 @@ COPY static /app/static
 
 ENV DATA_DIR=/data PORT=8073
 VOLUME /data
-EXPOSE 8073 8074
+EXPOSE 8073
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s CMD python3 -c "import urllib.request,os;urllib.request.urlopen('http://127.0.0.1:%s/healthz'%os.environ.get('PORT','8073'),timeout=4)" || exit 1
 CMD ["python3", "-u", "server.py"]

@@ -31,7 +31,7 @@
     $('#air-near').onchange = e => RS.store.set('air_near', e.target.checked);
     $('#air-nearkm').onchange = e => RS.store.set('air_nearkm', +e.target.value);
     $('#air-save').onchange = e => RS.store.set('air_save', e.target.checked);
-    $('#air-addgo').onclick = add; $('#air-add').onkeydown = e => { if (e.key === 'Enter') add(); };
+    $('#air-addgo').onclick = add; $('#air-add').onkeydown = e => { if (RS.isEnter(e)) add(); };
     $('#air-go').onclick = () => {
       if (RS.st.air) { RS.send({ cmd: 'airwatch', on: false }); return; }
       if (!sel.length) { RS.toast('Pick at least one channel first.', 'bad'); return; }

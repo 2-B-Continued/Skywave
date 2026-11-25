@@ -1,9 +1,9 @@
-/* fx.js - the cursor spotlight: cards glow softly where the pointer is (Lumen and Skywave always; Aurora and Classic with full motion).
+/* fx.js - the cursor spotlight: cards glow softly where the pointer is (Skywave and Depth always; Walnut with full motion).
    It only sets two CSS variables; each style sheet decides what the glow looks like. */
 (function () {
   'use strict';
   let raf = 0, ev = null;
-  const SPOT = { lumen: 1, skywave: 1, aurora: 2, classic: 2 };
+  const SPOT = { skywave: 1, depth: 1, walnut: 2 };
   document.addEventListener('pointermove', e => {
     const s = SPOT[document.documentElement.dataset.style];
     if (!s || e.pointerType === 'touch' || (s === 2 && document.documentElement.dataset.motion !== 'full')) return;

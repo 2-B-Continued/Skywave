@@ -6,7 +6,7 @@ const { chromium } = require('playwright'); const { spawn } = require('child_pro
  for (const [vw,vh,bar] of [[1280,900,'#tabs'],[390,844,'#mnav']]) {
   const p=await (await b.newContext({viewport:{width:vw,height:vh},hasTouch:vw<500})).newPage(); const errs=[]; p.on('pageerror',e=>errs.push(e.message));
   await p.goto('http://127.0.0.1:18182/#home'); await p.waitForTimeout(2500);
-  for (const st of ['skywave','classic','lumen','bento','folio','terminal','brut']) {
+  for (const st of ['skywave','depth','relief','walnut','riot','bento','folio','terminal','brut']) {
     await p.evaluate(s=>{ document.documentElement.dataset.style=s; }, st); await p.waitForTimeout(400);
     await p.evaluate(()=>RS.go('home')); await p.waitForTimeout(900);
     const r=await p.evaluate(async bar=>{ RS.go('scanner'); await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));

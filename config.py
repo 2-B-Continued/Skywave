@@ -27,7 +27,7 @@ DEFAULTS = {
     "bias_t": False,
     "hf_mode": "auto",             # auto | direct | off  (direct sampling for <24 MHz on generic dongles)
     "deemph_us": 50,               # FM de-emphasis in microseconds: 50 = most of the world, 75 = Americas
-    "settle_s": 0.25,              # discard this much data after a retune
+    "settle_s": 0.05,              # discard this much data after a retune (the tuner locks within a few milliseconds)
     "auth_user": "",
     "auth_pass": "",
     "adsb_gain_db": 49.6,
@@ -87,6 +87,8 @@ class Config:
             for k, val in saved.items():
                 if k in DEFAULTS:
                     self.v[k] = val
+            if saved.get("settle_s") == 0.25:          # the earlier default, saved with the other settings: use today's
+                self.v["settle_s"] = DEFAULTS["settle_s"]
         except (OSError, ValueError):
             pass
         for env, (key, conv) in ENV_MAP.items():
@@ -197,6 +199,7 @@ class Config:
                     if not isinstance(val, dict):
                         continue
                     m = dict(self.v.get("mqtt") or DEFAULTS["mqtt"])
+                    was = (m.get("host"), m.get("port"))
                     for mk in ("on", "discovery"):
                         if mk in val:
                             m[mk] = bool(val[mk])
@@ -209,6 +212,9 @@ class Config:
                         except (TypeError, ValueError):
                             pass
                     m["prefix"] = "".join(ch for ch in m["prefix"] if ch.isalnum() or ch in "_-/") or "skywave"
+                    # the saved password belongs to the saved broker: a new address without a new password starts empty
+                    if (m.get("host"), m.get("port")) != was and val.get("pass") is None:
+                        m["pass"] = ""
                     val = m
                 if k == "mp3_kbps":
                     try:

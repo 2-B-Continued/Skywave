@@ -9,6 +9,7 @@ Safety design (why the data can't tell the app what to do):
   * A satellite's NORAD number we ask about comes from our own catalog, not from the reply.
 """
 import json
+import os
 import re
 import time
 import urllib.parse
@@ -30,6 +31,8 @@ def _get_json(url, fetch=None):
         raise ValueError("blocked host")
     if fetch:
         return fetch(url)
+    if os.environ.get("NO_NET"):
+        raise OSError("outside requests are turned off (NO_NET)")
     req = urllib.request.Request(url, headers={"User-Agent": "skywave/1.0 (+satellite data refresh)", "Accept": "application/json"})
     with urllib.request.urlopen(req, timeout=20) as r:
         if urllib.parse.urlparse(r.geturl()).hostname != HOST:

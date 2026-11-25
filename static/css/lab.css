@@ -1,0 +1,180 @@
+/* lab.css - the Lab as one console: toolbar, settings column, spectrum with a tool dock, instruments column.
+   Fonts, colours, corners and surfaces come from the style's own tokens, so the console looks like the rest of the app in
+   every style. Sizes sit on one small scale (rem, so the browser's text size setting still applies). */
+#p-lab .lx {
+  --lx-side: 20rem; --lx-inst: 22.5rem; --lx-gap: .75rem; --lx-top: 84px; --lx-bottom: 1rem;
+  --lx-ctl-h: 2.25rem;                                             /* one height for every control in the toolbar */
+  --lx-num: var(--f-num, var(--f-code, ui-monospace)), ui-monospace, monospace;   /* numbers: the style's own */
+  --lx-r: min(var(--r, 12px), 12px);
+  display: flex; flex-direction: column; gap: .5rem; font-family: var(--f-body, inherit);
+}
+#p-lab .lx :is(output, .lb-kv b, .lx-mnum, .lx-status, .lx-freq, .lb-c > .muted.small) { font-family: var(--lx-num); font-variant-numeric: tabular-nums; }
+
+/* ---------------------------------------------------------------- toolbar (two rows that wrap by its own width) */
+#p-lab .lx-bar { container: lxbar / inline-size; display: flex; flex-direction: column; gap: .625rem; padding: .75rem 1rem; margin: 0; }
+#p-lab .lx-row { display: flex; flex-wrap: wrap; align-items: center; gap: .625rem 1rem; min-width: 0; }
+#p-lab .lx-play { min-height: var(--lx-ctl-h); min-width: 6rem; justify-content: center; }
+#p-lab .lx-play[aria-pressed="true"] { background: var(--bad, #d6452f); border-color: transparent; color: #fff; }
+#p-lab .lx-tune { display: flex; align-items: stretch; gap: .5rem; min-width: 0; }
+#p-lab .lx-freq { display: flex; align-items: baseline; padding: .125rem .625rem; border-radius: var(--lx-r); background: var(--glass, #0b161b); color: var(--sig, var(--amber));
+  font-size: 1.75rem; font-weight: var(--w-num, 600); line-height: 1.25; letter-spacing: -.01em; cursor: ns-resize; user-select: none; white-space: nowrap; }
+#p-lab .lx-freq span { padding: 0 .05em; border-bottom: 2px solid transparent; }
+#p-lab .lx-freq span.lead { opacity: .3; }
+#p-lab .lx-freq span.sel { border-bottom-color: currentColor; }
+#p-lab .lx-freq span:hover { background: color-mix(in srgb, currentColor 14%, transparent); border-radius: 3px; }
+#p-lab .lx-freq .lx-sep { font-style: normal; opacity: .45; }
+#p-lab .lx-freq small { font-size: .75rem; opacity: .6; margin-left: .4rem; font-weight: 500; }
+#p-lab .lx-freq:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+#p-lab .lx-fin { width: 7.5rem; min-height: var(--lx-ctl-h); font-family: var(--lx-num); font-size: .875rem; }
+#p-lab .lx-modes { margin-left: auto; flex-wrap: nowrap; }
+#p-lab .lx-modes button { min-height: 2rem; min-width: 2.75rem; padding-inline: .5rem; font-family: var(--f-body, inherit); font-size: .8125rem; font-weight: 600; letter-spacing: .02em; }
+#p-lab .lx-ctls { display: flex; flex-wrap: wrap; gap: .5rem 1.25rem; }
+#p-lab .lx-ctl { display: grid; grid-template-columns: 2.25rem minmax(5rem, 8rem) 4.75rem; align-items: center; gap: .5rem; min-height: var(--lx-ctl-h); }
+#p-lab .lx-ctl > span { font-size: .75rem; font-weight: 700; letter-spacing: .08em; color: var(--ink-2); }
+#p-lab .lx-ctl input[type=range] { width: 100%; min-width: 0; }
+#p-lab .lx-ctl output { font-size: .8125rem; color: var(--ink); text-align: right; white-space: nowrap; }
+#p-lab .lx-meter { display: grid; gap: .25rem; width: 12.5rem; }
+#p-lab .lx-snr { height: .5rem; border-radius: .25rem; background: color-mix(in srgb, var(--ink) 12%, transparent); overflow: hidden; }
+#p-lab .lx-snr i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--teal), var(--good, #52c28c) 60%, var(--amber)); }
+@media (prefers-reduced-motion: no-preference) { :root:not([data-motion="off"]) #p-lab .lx-snr i { transition: width .15s linear; } }
+#p-lab .lx-mnum { font-size: .75rem; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#p-lab .lx-leds { display: flex; flex-wrap: wrap; gap: .25rem; }
+#p-lab .lx-leds span { font-family: var(--lx-num); font-size: .625rem; font-weight: 700; line-height: 1; letter-spacing: .04em; padding: .3rem .35rem; border-radius: 4px;
+  border: 1px solid var(--line); color: var(--ink-2); }
+#p-lab .lx-leds span:not(.on) { opacity: .55; }
+#p-lab .lx-leds span.on { color: #10170f; background: var(--good, #52c28c); border-color: transparent; }
+#p-lab .lx-leds span.on.bad { background: var(--bad, #d6452f); color: #fff; }
+#p-lab .lx-tools { display: flex; flex-wrap: wrap; gap: .375rem; margin-left: auto; }
+#p-lab .lx-tools .btn { min-height: 2rem; }
+#p-lab .lx-status { padding: 0 .25rem; font-size: .75rem; color: var(--ink-2); overflow-wrap: anywhere; white-space: pre-wrap; }
+
+/* the toolbar rearranges for its own width, not the window's */
+@container lxbar (max-width: 1100px) { #p-lab .lx-modes { margin-left: 0; } }
+@container lxbar (max-width: 640px) {
+  #p-lab .lx-tune { flex: 1 1 100%; flex-wrap: wrap; }
+  #p-lab .lx-freq { font-size: 1.375rem; flex: 1 1 auto; }
+  #p-lab .lx-fin { flex: 1 1 6rem; width: auto; }
+  #p-lab .lx-modes { display: grid; grid-template-columns: repeat(4, 1fr); flex: 1 1 100%; }
+  #p-lab .lx-ctls, #p-lab .lx-ctl { width: 100%; }
+  #p-lab .lx-ctl { grid-template-columns: 2.25rem minmax(0, 1fr) 4.75rem; }
+  #p-lab .lx-meter { width: 100%; }
+  #p-lab .lx-tools { margin-left: 0; }
+}
+
+/* ---------------------------------------------------------------- the three columns */
+#p-lab .lx-grid { display: grid; grid-template-columns: var(--lx-side) minmax(0, 1fr) var(--lx-inst); grid-template-areas: "side main inst"; gap: var(--lx-gap); align-items: start; }
+#p-lab .lx-side { grid-area: side; }
+#p-lab .lx-main { grid-area: main; display: flex; flex-direction: column; gap: var(--lx-gap); min-width: 0; }
+#p-lab .lx-inst { grid-area: inst; }
+#p-lab :is(.lx-side, .lx-inst) { container-type: inline-size; position: sticky; top: var(--lx-top); max-height: calc(100dvh - var(--lx-top) - var(--lx-bottom)); overflow-y: auto; overflow-x: hidden;
+  overscroll-behavior: contain; scrollbar-width: thin; padding: .25rem 0; margin: 0; min-width: 0; }
+
+/* the big scope */
+#p-lab .lx-scope { position: relative; padding: .5rem; border-radius: var(--lx-r); margin: 0; }
+#p-lab .lx-scope .spec { display: block; width: 100%; height: clamp(170px, 27vh, 320px); cursor: crosshair; }
+#p-lab .lx-scope .water { display: block; width: 100%; height: clamp(200px, 33vh, 460px); cursor: crosshair; border-top: 1px solid var(--glass-line, #ffffff14); }
+#p-lab .lx-scope .scope-info { font-size: .8125rem; padding: .375rem .25rem 0; overflow-wrap: anywhere; }
+
+/* ---------------------------------------------------------------- collapsible sections (settings and instruments) */
+#p-lab .lx-sec { border-bottom: 1px solid var(--line); }
+#p-lab .lx-sec:last-child { border-bottom: 0; }
+#p-lab .lx-sec > summary { list-style: none; display: flex; align-items: center; gap: .5rem; min-height: 2.75rem; padding: 0 1rem; cursor: pointer;
+  font-size: .75rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2); }
+#p-lab .lx-sec > summary::-webkit-details-marker { display: none; }
+#p-lab .lx-sec > summary::before { content: ""; flex: none; width: .45rem; height: .45rem; border: solid currentColor; border-width: 0 2px 2px 0; rotate: -45deg; }
+#p-lab .lx-sec[open] > summary::before { rotate: 45deg; }
+@media (prefers-reduced-motion: no-preference) { :root:not([data-motion="off"]) #p-lab .lx-sec > summary::before { transition: rotate .15s; } }
+#p-lab .lx-sec > summary:hover { color: var(--ink); }
+#p-lab .lx-sec > summary:focus-visible { outline: 2px solid var(--teal); outline-offset: -2px; }
+#p-lab .lx-body { padding: 0 1rem .75rem; }
+
+/* ---------------------------------------------------------------- a group of controls or one instrument */
+#p-lab .lx-grp { padding: .5rem 0 .75rem; min-width: 0; }
+#p-lab .lx-grp + .lx-grp { border-top: 1px dashed color-mix(in srgb, var(--line) 80%, transparent); }
+#p-lab .lx-grp > h4 { margin: 0 0 .375rem; font-size: .8125rem; font-weight: 700; line-height: 1.3; color: var(--ink); text-transform: none; letter-spacing: 0; }
+#p-lab .lx-sub { margin: 0 0 .5rem; font-size: .75rem; line-height: 1.45; color: var(--ink-2); text-wrap: pretty; }
+#p-lab .lx.help-off :is(.lx-sub, .lb-l .small) { display: none; }
+#p-lab .lx-grp :is(.row, .row.tight) { flex-wrap: wrap; gap: .375rem; }
+#p-lab .lx-grp .btn { white-space: normal; text-align: center; }
+
+/* one setting: the label on its own line (help text under it), the control under that at full width. A switch sits on the
+   label's line at the right; a slider shows its value on the label's line. Every control starts and ends on the same edges. */
+#p-lab .lb-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: .75rem; row-gap: .25rem; align-items: center; padding: .375rem 0; border: 0; }
+#p-lab .lb-l { grid-column: 1 / -1; min-width: 0; }
+#p-lab .lb-l label { display: block; font-size: .8125rem; font-weight: 500; line-height: 1.35; color: var(--ink); }
+#p-lab .lb-l .small { font-size: .75rem; line-height: 1.4; margin-top: .125rem; }
+#p-lab .lb-c { grid-column: 1 / -1; display: flex; align-items: center; gap: .5rem; min-width: 0; flex-wrap: nowrap; }
+#p-lab .lb-c :is(select, input:not([type=checkbox]):not([type=range]):not([type=color])) { flex: 1 1 auto; width: 100%; min-width: 0; min-height: 2.25rem; font-size: .875rem; }
+#p-lab .lb-c > .muted.small { flex: none; font-size: .75rem; }
+#p-lab .lb-row:has(.switch) .lb-l { grid-column: 1; }
+#p-lab .lb-row:has(.switch) .lb-c { grid-column: 2; grid-row: 1; }
+#p-lab .lb-row:has(input[type=range]) .lb-l { grid-column: 1; }
+#p-lab .lb-row:has(input[type=range]) .lb-c { display: contents; }
+#p-lab .lb-row:has(input[type=range]) .lb-c output { grid-column: 2; grid-row: 1; font-size: .75rem; color: var(--ink-2); text-align: right; white-space: nowrap; }
+#p-lab .lb-row:has(input[type=range]) .lb-c input[type=range] { grid-column: 1 / -1; width: 100%; min-width: 0; margin: 0; }
+#p-lab .lb-row:has(.switch):has(.lb-l .small) .lb-c { align-self: start; }
+
+/* read-outs */
+#p-lab .lb-meas { display: grid; grid-template-columns: 1fr; gap: .1875rem; }
+#p-lab .lb-kv { display: flex; align-items: baseline; justify-content: space-between; gap: .75rem; padding: .3125rem .5625rem; border-radius: 6px; font-size: .8125rem; line-height: 1.35; min-width: 0; }
+#p-lab .lb-kv span { min-width: 0; overflow-wrap: anywhere; }
+#p-lab .lb-kv b { font-size: .8125rem; font-weight: 600; text-align: right; flex: none; max-width: 60%; overflow-wrap: anywhere; }
+#p-lab .lx-inst .lp-cv { height: 170px; margin: .375rem 0; }
+#p-lab .lx-inst .lp-cv.square { height: min(300px, 90cqi); }
+#p-lab .lx-inst .lp-counter { font-family: var(--lx-num); font-size: 1.625rem; overflow-wrap: anywhere; }
+#p-lab .lx-inst .tbl { width: 100%; table-layout: fixed; font-size: .8125rem; }
+#p-lab .lx-inst .tbl td { font-family: var(--lx-num); overflow-wrap: anywhere; }
+#p-lab .lb-tbl { display: flex; flex-direction: column; gap: .375rem; }
+#p-lab .lb-tr { display: flex; flex-wrap: wrap; align-items: center; gap: .375rem .5rem; }
+#p-lab .lb-tr input { flex: 1 1 8rem; min-width: 0; }
+#p-lab .lb-tr .mono { font-family: var(--lx-num); font-size: .8125rem; }
+#p-lab .cm-grid { grid-template-columns: repeat(auto-fill, minmax(5.25rem, 1fr)); }
+#p-lab #lp-smode { display: flex; flex-wrap: wrap; }
+#p-lab .lp-grid { grid-template-columns: repeat(auto-fill, minmax(3.5rem, 1fr)); }
+#p-lab .lp-grid span { font-family: var(--lx-num); }
+#p-lab .lp-api code, #p-lab .lx-grp code { overflow-wrap: anywhere; }
+
+/* ---------------------------------------------------------------- the tool dock: one row of tabs that scrolls, fading
+   at an edge that has more tabs beyond it (never wraps: wrapped rows hide which tab is chosen) */
+@property --lx-fs { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --lx-fe { syntax: "<length>"; inherits: false; initial-value: 0px; }
+#p-lab .lx-dock { padding: 0; margin: 0; overflow: hidden; }
+#p-lab .lx-tabs { display: flex; flex-wrap: nowrap; gap: .125rem; overflow-x: auto; padding: .375rem .375rem 0; border-bottom: 1px solid var(--line);
+  scrollbar-width: none; scroll-snap-type: inline proximity; scroll-padding-inline: 2rem; }
+#p-lab .lx-tabs::-webkit-scrollbar { display: none; }
+@supports (animation-timeline: scroll()) {
+  #p-lab .lx-tabs {
+    mask: linear-gradient(black, black) no-clip subtract,
+      linear-gradient(to right, black, transparent) 0 0 / var(--lx-fs) 100% no-repeat no-clip,
+      linear-gradient(to right, transparent, black) 100% 0 / var(--lx-fe) 100% no-repeat no-clip;
+    animation: lx-fade-s linear both, lx-fade-e linear both; animation-timeline: scroll(self inline);
+    animation-range: 0 2rem, calc(100% - 2rem) 100%;
+  }
+}
+@keyframes lx-fade-s { to { --lx-fs: 2rem; } }
+@keyframes lx-fade-e { from { --lx-fe: 2rem; } }
+#p-lab .lx-tabs [role=tab] { position: relative; flex: none; scroll-snap-align: start; border: 0; background: none; color: var(--ink-2); font-family: var(--f-body, inherit);
+  font-size: .8125rem; font-weight: 600; line-height: 1.2; padding: .625rem .75rem; border-radius: var(--lx-r) var(--lx-r) 0 0; cursor: pointer; min-height: 2.5rem; white-space: nowrap; }
+#p-lab .lx-tabs [role=tab]:hover { color: var(--ink); }
+#p-lab .lx-tabs [role=tab][aria-selected="true"] { color: var(--ink); }
+#p-lab .lx-tabs [role=tab][aria-selected="true"]::after { content: ""; position: absolute; inset: auto .5rem 0; border-block-end: 3px solid var(--teal); border-radius: 2px; }
+#p-lab .lx-tabs [role=tab]:focus-visible { outline: 2px solid var(--teal); outline-offset: -2px; }
+#p-lab .lx-panel { padding: .75rem 1rem 1rem; max-height: min(520px, 60vh); overflow: auto; overscroll-behavior: contain; container-type: inline-size; }
+#p-lab .lx-panel .lb-meas { grid-template-columns: repeat(auto-fill, minmax(13.75rem, 1fr)); }
+#p-lab .lx-panel .lp-cv.tall { height: 240px; }
+#p-lab .lx-panel .lb-row { max-width: 36rem; }
+
+/* ---------------------------------------------------------------- Relief draws the app as one raised slab; on the Lab the
+   slab grows to the window so the console has room, and keeps its shape */
+@media (min-width: 1100px) { :root[data-style="relief"] main:has(#p-lab.on) { max-width: min(1720px, calc(100vw - 48px)); padding-inline: 28px; } }
+
+/* ---------------------------------------------------------------- narrower screens */
+@media (max-width: 1360px) {
+  #p-lab .lx { --lx-side: 18.5rem; }
+  #p-lab .lx-grid { grid-template-columns: var(--lx-side) minmax(0, 1fr); grid-template-areas: "side main" "side inst"; }
+  #p-lab .lx-inst { position: static; max-height: none; overflow: visible; }
+}
+@media (max-width: 900px) {
+  #p-lab .lx-grid { grid-template-columns: minmax(0, 1fr); grid-template-areas: "main" "inst" "side"; }
+  #p-lab :is(.lx-side, .lx-inst) { position: static; max-height: none; overflow: visible; }
+}

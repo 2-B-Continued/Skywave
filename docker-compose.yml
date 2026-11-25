@@ -12,7 +12,6 @@ services:
     privileged: true            # lets the container see the USB dongle
     ports:
       - "8073:8073"             # open http://localhost:8073 (or http://THIS-COMPUTERS-IP:8073 from another device)
-      - "8074:8074"             # the same page over https. Phones only give the compass and motion sensors to https pages
       - "7356:7356"             # remote control for Gpredict, rig-remote and scripts (off until you turn it on in Lab > Network)
     volumes:
       # Directory mount (not "devices:") so it still works if you replug the dongle into another port.

@@ -392,11 +392,14 @@ class Space:
             old = self.tles.get(s["id"])
             if old and not force and time.time() - old.get("fetched", 0) < 12 * 3600:
                 continue
+            if os.environ.get("NO_NET"):
+                errs.append("outside requests are turned off (NO_NET)")
+                break
             url = "https://celestrak.org/NORAD/elements/gp.php?CATNR=%d&FORMAT=tle" % s["norad"]
             try:
                 req = urllib.request.Request(url, headers={"User-Agent": "skywave/1.0"})
                 with urllib.request.urlopen(req, timeout=15) as r:
-                    txt = r.read().decode("ascii", "replace")
+                    txt = r.read(65536).decode("ascii", "replace")
                 ok = self.add_tle_text(txt, s["id"], save=False)
                 got += 1 if ok else 0
                 if not ok:
